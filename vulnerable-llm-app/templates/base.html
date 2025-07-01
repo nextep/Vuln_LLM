@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Vulnerable LLM Test Suite{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .vuln-active { background-color: #1e40af; color: white; }
+        .code-block { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 0.375rem; padding: 1rem; margin: 1rem 0; }
+        .exploit-form { background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 0.375rem; padding: 1rem; margin: 1rem 0; }
+        
+        /* Loading spinner styles */
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            display: flex;
+            align-items: center;
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        
+        .processing-overlay {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .btn-loading {
+            opacity: 0.7;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-gray-800 text-white p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">🔓 Vulnerable LLM Test Suite</h1>
+            <div class="space-x-4">
+                <a href="/" class="hover:text-gray-300">Home</a>
+                <a href="/health" class="hover:text-gray-300">Health</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mx-auto mt-8 px-4">
+        {% block content %}{% endblock %}
+    </div>
+    
+    <footer class="mt-16 p-4 text-center text-gray-600">
+        <p>⚠️ This application is intentionally vulnerable for security testing purposes</p>
+    </footer>
+
+    <script>
+        // Common JavaScript functions
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                alert('Copied to clipboard!');
+            });
+        }
+        
+        // Loading state management
+        function showLoading(buttonId, loadingText = 'Processing...') {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.disabled = true;
+                button.classList.add('btn-loading');
+                button.innerHTML = `<span class="spinner"></span>${loadingText}`;
+            }
+        }
+        
+        function hideLoading(buttonId, originalText = 'Submit') {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.disabled = false;
+                button.classList.remove('btn-loading');
+                button.innerHTML = originalText;
+            }
+        }
+        
+        function showProcessingMessage(containerId, message = 'AI is generating response...') {
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.innerHTML = `
+                    <div class="processing-overlay">
+                        <div class="loading-text">
+                            <span class="spinner"></span>
+                            <span>${message}</span>
+                        </div>
+                    </div>
+                `;
+                container.classList.remove('hidden');
+            }
+        }
+        
+        // Add subtle animations to forms
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add pulse animation to exploit buttons
+            const exploitButtons = document.querySelectorAll('.exploit-form button');
+            exploitButtons.forEach(button => {
+                button.addEventListener('mouseenter', function() {
+                    this.classList.add('pulse-animation');
+                });
+                button.addEventListener('mouseleave', function() {
+                    this.classList.remove('pulse-animation');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

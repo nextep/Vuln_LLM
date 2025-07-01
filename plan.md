@@ -19,33 +19,33 @@ Objective: Implement the most common and interactive vulnerabilities.
 
 Tasks (in order of priority):
 
-LLM02 - Insecure Output Handling: Build the "Client-Side Action Renderer" page. Focus on the frontend rendering of raw LLM output.
+LLM02 - Insecure Output Handling: Build the "Markdown Renderer" page. Focus on the frontend rendering of raw LLM output.
 
-LLM06 - Sensitive Information Disclosure: Build the "Chatbot" page. Focus on crafting a system prompt that contains extractable secrets.
+LLM06 - Sensitive Information Disclosure: Build the "Assistant with Secrets" page. Focus on crafting a system prompt that contains extractable secrets.
 
-LLM07 - Insecure Plugin Design: Build the "Weather Plugin" page. Focus on the backend logic that dangerously uses os.system or a similar function with LLM output.
+LLM07 - Insecure Plugin Design: Build the "System Command Runner" page. Focus on the backend logic that dangerously uses os.system or a similar function with LLM output.
 
-LLM09 - Overreliance: Build the "Code Generation Assistant". Focus on prompt engineering to reliably produce insecure code snippets.
+LLM09 - Overreliance: Build the "Vulnerable Code Generator". Focus on prompt engineering to reliably produce insecure code snippets.
 
 Phase 3: Advanced & System-Level Vulnerabilities (Estimated Time: 4 Days)
 Objective: Implement vulnerabilities that involve more complex backend logic and system interaction.
 
 Tasks:
 
-LLM08 - Excessive Agency: Build the "File Management Assistant". This is the most complex module, requiring backend functions for file I/O and careful prompt design to grant the LLM agency.
+LLM08 - Excessive Agency: Build the "File Assistant". This is the most complex module, requiring backend functions for file I/O and careful prompt design to grant the LLM agency.
 
-LLM04 - Model DoS: Implement the "Recursive Query Analyzer". This is primarily a frontend task to create a compelling DoS prompt.
+LLM04 - Model DoS: Implement the "Complex Query Processor". This is primarily a frontend task to create a compelling DoS prompt.
 
-LLM03 - Training Data Poisoning: Implement the "Biased Content Generation" module. This involves adding simple keyword-based interception logic to the backend.
+LLM03 - Training Data Poisoning: Implement the "Knowledge Base Query" module. This involves adding simple keyword-based interception logic to the backend.
 
 Phase 4: Conceptual & Supply Chain Vulnerabilities (Estimated Time: 2 Days)
 Objective: Implement the vulnerabilities that are more conceptual and require less complex code.
 
 Tasks:
 
-LLM05 - Supply Chain Vulnerabilities: Add the "Model Version Selector" UI element and the simple backend logic to simulate a compromised model.
+LLM05 - Supply Chain Vulnerabilities: Add the "Model Selector" UI element and the simple backend logic to simulate a compromised model.
 
-LLM10 - Model Theft: Create the unauthenticated /api/query endpoint.
+LLM10 - Model Theft: Create the unrestricted API Endpoint.
 
 Phase 5: Finalization & Documentation (Estimated Time: 3 Days)
 Objective: Polish the application, write clear instructions for each module, and package for release.

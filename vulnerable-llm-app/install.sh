@@ -1,11 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # ==============================================================================
-# Vulnerable LLM Test Suite Installation Script for ARM64 (Jetson Orin)
-# OWASP Top 10 for LLM Applications
-#
-# This script installs Ollama, pulls phi3 model, and creates a comprehensive
-# vulnerable LLM test suite demonstrating all OWASP Top 10 vulnerabilities.
+# Vulnerable LLM Test Suite Installation Script
+# For ARM64 Ubuntu (Jetson Orin)
 # ==============================================================================
 
 # --- Color Codes for Output ---
@@ -76,14 +73,17 @@ check_system_requirements() {
     local arch=$(uname -m)
     if [ "$arch" != "aarch64" ]; then
         log_warn "This script is optimized for ARM64 (aarch64) but detected: $arch"
-        read -p "Continue anyway? (y/N): " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            log_error "Installation cancelled by user"
-            exit 1
-        fi
-    else
-        log_info "ARM64 architecture detected - OK"
+        printf "Continue anyway? (y/N): "
+        read -r reply
+        case "$reply" in
+            y|Y)
+                log_info "User chose to continue."
+                ;;
+            *)
+                log_error "Installation cancelled by user."
+                exit 1
+                ;;
+        esac
     fi
     
     # Check available memory
@@ -112,22 +112,6 @@ check_system_requirements() {
         log_error "Python3 is required but not installed"
         exit 1
     fi
-}
-
-# --- Create Project Directory ---
-create_project_structure() {
-    log_step "Creating project structure..."
-    
-    mkdir -p vulnerable-llm-app
-    cd vulnerable-llm-app
-    log_info "Created project directory: $(pwd)"
-
-    # Create all required subdirectories
-    mkdir -p modules templates/vulns static sandbox logs
-    mkdir -p sandbox/llm01_files sandbox/llm02_files sandbox/llm03_files sandbox/llm04_files sandbox/llm05_files
-    mkdir -p sandbox/llm06_files sandbox/llm07_files sandbox/llm08_files sandbox/llm09_files sandbox/llm10_files
-    
-    log_info "Project structure created successfully"
 }
 
 # --- Function to install system dependencies ---
@@ -188,12 +172,6 @@ setup_python_env() {
         log_error "Failed to install Python dependencies"
         return 1
     }
-    
-    # Create requirements.txt
-    cat > requirements.txt << 'EOF'
-Flask==3.0.0
-requests==2.31.0
-EOF
 }
 
 # --- Function to install Ollama ---
@@ -274,7 +252,7 @@ pull_model() {
 
 # --- Function to create application files ---
 create_app_files() {
-    log_step "Creating core application files..."
+    log_step "Creating application files..."
     
     # Create main app.py
     log_info "Creating app.py..."
@@ -314,6 +292,8 @@ try:
     app.register_blueprint(llm01.bp, url_prefix='/llm01')
 except ImportError:
     logger.warning("LLM01 module not found - run create_modules.sh")
+
+# TODO: Import other modules as they are created
 
 @app.route('/')
 def index():
@@ -443,7 +423,7 @@ EOF
 {% endblock %}
 EOF
 
-    log_info "Core application files created successfully"
+    log_info "Application files created successfully"
 }
 
 # --- Main installation flow ---
@@ -453,12 +433,25 @@ main() {
     
     # Run installation steps
     check_system_requirements || exit 1
-    create_project_structure || exit 1
+    
+    # Create project structure
+    mkdir -p vulnerable-llm-app
+    cd vulnerable-llm-app
+    mkdir -p modules templates/vulns static sandbox logs
+    mkdir -p sandbox/llm01_files sandbox/llm02_files sandbox/llm03_files sandbox/llm04_files sandbox/llm05_files
+    mkdir -p sandbox/llm06_files sandbox/llm07_files sandbox/llm08_files sandbox/llm09_files sandbox/llm10_files
+    
     install_dependencies || exit 1
     setup_python_env || exit 1
     install_ollama || exit 1
     pull_model || exit 1
     create_app_files || exit 1
+    
+    # Create remaining module files
+    log_info "Installation will continue with module creation..."
+    ./create_modules.sh || {
+        log_warn "Module creation script not found, run it manually"
+    }
     
     log_step "Installation completed successfully!"
     echo
@@ -467,18 +460,15 @@ main() {
     echo -e "${GREEN}========================================${NC}"
     echo
     echo "To run the application:"
-    echo "1. cd vulnerable-llm-app"
-    echo "2. Run: ./create_modules.sh"
-    echo "3. Activate the virtual environment: source venv/bin/activate"
-    echo "4. Start the Flask server: python3 app.py"
-    echo "5. Open your browser: http://localhost:5001"
+    echo "1. Activate the virtual environment: source venv/bin/activate"
+    echo "2. Start the Flask server: python3 app.py"
+    echo "3. Open your browser: http://localhost:5001"
     echo
     echo "Logs are available in: $LOG_DIR"
-    echo
-    echo -e "${YELLOW}⚠️  WARNING: This application is intentionally vulnerable!${NC}"
-    echo -e "${YELLOW}   Use only in isolated environments for testing/education.${NC}"
     echo
 }
 
 # Run main function
-main "$@" 
+main "$@"
+
+echo "Script finished."

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-8">
+        <p class="font-bold">⚠️ Security Warning</p>
+        <p>This application contains intentional security vulnerabilities based on the OWASP Top 10 for LLMs.</p>
+        <p>Use only in isolated environments for educational and testing purposes.</p>
+    </div>
+    
+    <h2 class="text-3xl font-bold mb-8">OWASP Top 10 LLM Vulnerabilities</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for vuln in vulnerabilities %}
+        <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
+            <div class="p-6">
+                <h3 class="text-xl font-semibold mb-2">{{ vuln.id.upper() }}: {{ vuln.name }}</h3>
+                <p class="text-gray-600 mb-4">{{ vuln.desc }}</p>
+                <a href="/{{ vuln.id }}" class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    Test Vulnerability →
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="mt-12 bg-gray-100 rounded-lg p-6">
+        <h3 class="text-xl font-semibold mb-4">Quick Start Guide</h3>
+        <ol class="list-decimal list-inside space-y-2">
+            <li>Select a vulnerability from the grid above</li>
+            <li>Read the vulnerability description and attack vectors</li>
+            <li>Try the provided exploit examples</li>
+            <li>Experiment with your own payloads</li>
+            <li>Check the remediation guidance (for learning purposes)</li>
+        </ol>
+    </div>
+
+    <div class="mt-8 bg-blue-50 rounded-lg p-6">
+        <h3 class="text-xl font-semibold mb-4">System Status</h3>
+        <div id="health-status" class="text-gray-600">Checking system health...</div>
+    </div>
+</div>
+
+<script>
+// Check health status
+fetch('/health')
+    .then(response => response.json())
+    .then(data => {
+        const statusDiv = document.getElementById('health-status');
+        statusDiv.innerHTML = `
+            <p><strong>Status:</strong> ${data.status}</p>
+            <p><strong>Ollama:</strong> ${data.ollama}</p>
+            <p><strong>Last Check:</strong> ${new Date(data.timestamp).toLocaleString()}</p>
+        `;
+    })
+    .catch(error => {
+        document.getElementById('health-status').innerHTML = '<p class="text-red-600">Failed to check system health</p>';
+    });
+</script>
+{% endblock %}

@@ -1,26 +1,35 @@
-Product Requirements Document (PRD): Vulnerable LLM Test Suite
-1. Overview & Vision
-This document outlines the requirements for expanding the existing "Vulnerable LLM Note Summarizer" into a comprehensive, self-hosted "Vulnerable LLM Test Suite". The vision is to create a practical, hands-on educational tool for security researchers, developers, and students to understand, identify, and test against the full OWASP Top 10 for Large Language Model Applications. The application will be self-contained, run locally on ARM64 hardware (like the Jetson Orin), and provide clear, demonstrable examples of each major vulnerability category.
+# Product Requirements Document (PRD): Vulnerable LLM Test Suite
 
-2. Goals
-Educational: To provide a safe and legal environment for learning about LLM vulnerabilities.
+## 1. Overview & Vision
+This document outlines the requirements for transforming the existing "Vulnerable LLM Note Summarizer" into a lightweight, comprehensive "Vulnerable LLM Test Suite". The vision is to create a practical, hands-on security testing tool that demonstrates all OWASP Top 10 vulnerabilities for Large Language Model Applications. The application will be optimized for resource-constrained environments (8GB RAM), run entirely locally using Ollama, and provide clear, exploitable examples of each vulnerability.
 
-Comprehensive: To implement a distinct, testable module for each of the OWASP Top 10 for LLM risks.
+Similar to established vulnerable apps like [DVWA](https://github.com/vavkamil/awesome-vulnerable-apps?tab=readme-ov-file#OWASP-Top-10), this will serve as a safe sandbox for security testing and education.
 
-Practical: To create realistic scenarios that mimic how these vulnerabilities manifest in real-world applications.
+## 2. Goals
+- **Lightweight**: Optimized to run on 8GB Jetson Orin devices with minimal resource consumption
+- **Educational**: Safe, legal environment for learning LLM security vulnerabilities
+- **Comprehensive**: One clear demonstration for each OWASP Top 10 LLM vulnerability
+- **Practical**: Real-world attack scenarios that security professionals would encounter
+- **Self-Contained**: No external APIs, cloud services, or additional costs required
+- **Easy Setup**: One-script installation with minimal configuration
 
-Self-Contained: To run entirely locally on specified hardware without requiring external APIs or paid services.
+## 3. Target Audience
+- Application Security (AppSec) Professionals
+- Penetration Testers  
+- AI/ML Security Researchers
+- Red Team Operators
+- Security Students and Educators
 
-3. Target Audience
-Application Security (AppSec) Professionals
+## 4. Technical Constraints & Requirements
+- **Hardware**: ARM64 architecture (Jetson Orin) with 8GB RAM minimum
+- **Model**: Uses phi3 or similar small models (< 2GB) via Ollama
+- **Stack**: Python Flask, minimal JavaScript, no heavy frameworks
+- **Performance**: Each vulnerability demo should execute within 30 seconds
+- **Storage**: Total application size < 100MB (excluding Ollama and models)
 
-Penetration Testers
+## 5. Architecture Overview
 
-AI/ML Developers and Engineers
-
-Students and Educators in Cybersecurity
-
-4. Functional Requirements & Features (The OWASP Top 10)
+## 6. Functional Requirements & Features (The OWASP Top 10)
 The application will be expanded from a single-page app to a multi-feature suite. Each feature will be a module demonstrating one of the OWASP Top 10 risks.
 
 LLM01: Prompt Injection
