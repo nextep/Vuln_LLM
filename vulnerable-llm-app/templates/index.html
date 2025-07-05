@@ -49,7 +49,10 @@ fetch('/health')
         const statusDiv = document.getElementById('health-status');
         statusDiv.innerHTML = `
             <p><strong>Status:</strong> ${data.status}</p>
-            <p><strong>Ollama:</strong> ${data.ollama}</p>
+            <p><strong>Backend:</strong> ${data.backend}</p>
+            <p><strong>Backend Status:</strong> ${data.backend_status}</p>
+            <p><strong>Model:</strong> ${data.backend_details?.model || 'Unknown'}</p>
+            <p><strong>Response Time:</strong> ${data.backend_details?.response_time ? (data.backend_details.response_time * 1000).toFixed(0) + 'ms' : 'N/A'}</p>
             <p><strong>Last Check:</strong> ${new Date(data.timestamp).toLocaleString()}</p>
         `;
     })

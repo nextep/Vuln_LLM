@@ -4,19 +4,18 @@ Demonstrates vulnerabilities in LLM plugins leading to command injection and sys
 """
 
 from flask import Blueprint, request, jsonify, render_template
-import requests
-import json
 import logging
+import sys
+import os
 import re
 import subprocess
-import os
+from client_registry import llm_client
+
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 bp = Blueprint('llm07', __name__)
 logger = logging.getLogger(__name__)
-
-# Ollama API configuration
-OLLAMA_API_URL = "http://localhost:11434/api/generate"
-DEFAULT_MODEL = "phi3"
 
 @bp.route('/')
 def index():
@@ -34,18 +33,32 @@ def execute_plugin_action():
             return jsonify({'error': 'No action provided'}), 400
         
         # Analyze the action request using LLM
-        plugin_response = analyze_and_execute(action)
+        result = llm_client.call_vulnerable_model(
+            prompt=f"Analyze this plugin action request and provide detailed execution steps: {action}",
+            attack_type='insecure_plugin',
+            use_system_prompt=False
+        )
+        
+        # Simulate plugin execution based on LLM analysis
+        plugin_response = analyze_and_execute(action, result.get('response', ''))
         
         # Check for security issues
         security_assessment = assess_security_risk(action, plugin_response)
         
         # Log the request
-        logger.warning(f"LLM07 plugin execution: {action[:100]}... | Risk: {security_assessment['risk_level']}")
+        logger.warning(f"LLM07 plugin execution: {action[:100]}... | "
+                      f"Risk: {security_assessment.get('risk_level', 'unknown')} | "
+                      f"Vulnerability detected: {result.get('vulnerability_detected', False)}")
         
         return jsonify({
             'result': plugin_response,
-            'injection_detected': security_assessment['injection_detected'],
-            'suspicious_activity': security_assessment['suspicious_activity'],
+            'injection_detected': security_assessment.get('injection_detected', False),
+            'suspicious_activity': security_assessment.get('suspicious_activity', False),
+            'vulnerability_detected': result.get('vulnerability_detected', False),
+            'vulnerability_indicators': result.get('vulnerability_indicators', []),
+            'model_used': result.get('model_used', 'unknown'),
+            'response_time': result.get('response_time', 0),
+            'risk_level': security_assessment.get('risk_level', 'low'),
             'vulnerability': 'insecure_plugin_design'
         })
         
@@ -53,17 +66,8 @@ def execute_plugin_action():
         logger.error(f"Error in LLM07 processing: {str(e)}")
         return jsonify({'error': 'Plugin execution failed'}), 500
 
-def analyze_and_execute(action):
+def analyze_and_execute(action, llm_analysis):
     """Analyze action request and execute through vulnerable plugins"""
-    # Use LLM to determine which plugin to use
-    analysis_prompt = f"""Analyze this request and determine which system plugin to use:
-"{action}"
-
-Available plugins: file_system, network_scanner, database_query, system_info
-Respond with the plugin name and the command to execute."""
-    
-    llm_analysis = call_ollama(analysis_prompt)
-    
     # Simulate plugin execution based on action content
     if 'file' in action.lower() or 'read' in action.lower():
         return execute_file_plugin(action)
@@ -166,31 +170,3 @@ def assess_security_risk(action, response):
         'suspicious_activity': suspicious_activity,
         'risk_level': risk_level
     }
-
-def call_ollama(prompt):
-    """Call Ollama API with the given prompt"""
-    try:
-        payload = {
-            "model": DEFAULT_MODEL,
-            "prompt": prompt,
-            "stream": False,
-            "options": {
-                "temperature": 0.5,
-                "max_tokens": 200
-            }
-        }
-        
-        response = requests.post(OLLAMA_API_URL, json=payload, timeout=30)
-        
-        if response.status_code == 200:
-            result = response.json()
-            return result.get('response', 'No response generated')
-        else:
-            return f"Error: API returned status {response.status_code}"
-            
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Ollama API error: {str(e)}")
-        return "Error: Could not connect to language model"
-    except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
-        return "Error: Unexpected error occurred"

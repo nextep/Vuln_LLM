@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Advanced Testing - Vulnerable LLM Test Suite{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="mb-8">
+        <h2 class="text-3xl font-bold text-gray-900 mb-2">Advanced Vulnerability Testing</h2>
+        <p class="text-gray-600">A comprehensive interface to test specific models, system prompts, and defenses against various attack vectors.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Configuration Column -->
+        <div class="lg:col-span-1 space-y-6">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-xl font-semibold mb-4">1. Test Configuration</h3>
+                
+                <label for="attack-type-select" class="block text-sm font-medium text-gray-700">Attack Type (OWASP)</label>
+                <select id="attack-type-select" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                    <option value="prompt_injection">LLM01: Prompt Injection</option>
+                    <option value="insecure_output">LLM02: Insecure Output Handling</option>
+                    <option value="data_poisoning">LLM03: Training Data Poisoning</option>
+                    <option value="model_dos">LLM04: Model DoS</option>
+                    <option value="supply_chain">LLM05: Supply Chain</option>
+                    <option value="sensitive_disclosure">LLM06: Sensitive Info Disclosure</option>
+                    <option value="insecure_plugin">LLM07: Insecure Plugin</option>
+                    <option value="excessive_agency">LLM08: Excessive Agency</option>
+                    <option value="overreliance">LLM09: Overreliance</option>
+                    <option value="model_theft">LLM10: Model Theft</option>
+                    <option value="multimodal_injection">Multimodal Injection (llava)</option>
+                </select>
+
+                <label for="model-select" class="mt-4 block text-sm font-medium text-gray-700">Target Model</label>
+                <select id="model-select" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                    <option value="">Auto-select based on attack</option>
+                    {% for model in available_models %}
+                    <option value="{{ model }}">{{ model }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-xl font-semibold mb-4">2. Reasoning & Thinking</h3>
+                <label for="temperature-slider" class="block text-sm font-medium text-gray-700">Temperature: <span id="temperature-value">0.8</span></label>
+                <input type="range" id="temperature-slider" min="0" max="2" step="0.1" value="0.8" class="w-full">
+
+                <label for="top-p-slider" class="mt-4 block text-sm font-medium text-gray-700">Top-P: <span id="top-p-value">0.9</span></label>
+                <input type="range" id="top-p-slider" min="0" max="1" step="0.05" value="0.9" class="w-full">
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-xl font-semibold mb-4">3. System Defenses</h3>
+                <div class="space-y-2">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="defense-input-sanitization" checked class="rounded">
+                        <span class="ml-2 text-sm">Input Sanitization</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="defense-output-filtering" checked class="rounded">
+                        <span class="ml-2 text-sm">Output Filtering</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="defense-prompt-templating" class="rounded">
+                        <span class="ml-2 text-sm">Strict Prompt Templating</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Testing & Results Column -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-xl font-semibold mb-4">4. System Prompt & Payload</h3>
+                <label for="system-prompt-textarea" class="block text-sm font-medium text-gray-700">System Prompt (leave blank for default)</label>
+                <textarea id="system-prompt-textarea" rows="4" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 font-mono text-xs" placeholder="Override default system prompt for this test..."></textarea>
+                
+                <label for="payload-textarea" class="mt-4 block text-sm font-medium text-gray-700">Attack Payload / User Prompt</label>
+                <textarea id="payload-textarea" rows="6" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2" placeholder="Enter your malicious prompt or test query here..."></textarea>
+
+                <div id="image-upload-section" class="mt-4 hidden">
+                    <label for="image-file-input" class="block text-sm font-medium text-gray-700">Image for Multimodal Attack (llava)</label>
+                    <input type="file" id="image-file-input" accept="image/*" class="mt-1 block w-full text-sm">
+                </div>
+
+                <div class="mt-4 text-right">
+                    <button id="run-test-btn" class="bg-red-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-red-700">Run Test</button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-xl font-semibold mb-4">5. Results</h3>
+                <div id="results-container" class="space-y-4">
+                    <div class="text-gray-500">Run a test to see the results.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Slider value display
+    document.getElementById('temperature-slider').addEventListener('input', e => {
+        document.getElementById('temperature-value').textContent = e.target.value;
+    });
+    document.getElementById('top-p-slider').addEventListener('input', e => {
+        document.getElementById('top-p-value').textContent = e.target.value;
+    });
+
+    // Show/hide image upload
+    document.getElementById('model-select').addEventListener('change', e => {
+        const imageSection = document.getElementById('image-upload-section');
+        if (e.target.value.includes('llava')) {
+            imageSection.classList.remove('hidden');
+        } else {
+            imageSection.classList.add('hidden');
+        }
+    });
+
+    // Run test
+    document.getElementById('run-test-btn').addEventListener('click', () => {
+        const formData = new FormData();
+        formData.append('attack_type', document.getElementById('attack-type-select').value);
+        formData.append('model', document.getElementById('model-select').value);
+        formData.append('temperature', document.getElementById('temperature-slider').value);
+        formData.append('top_p', document.getElementById('top-p-slider').value);
+        formData.append('system_prompt', document.getElementById('system-prompt-textarea').value);
+        formData.append('payload', document.getElementById('payload-textarea').value);
+        
+        formData.append('defense_input_sanitization', document.getElementById('defense-input-sanitization').checked);
+        formData.append('defense_output_filtering', document.getElementById('defense-output-filtering').checked);
+        formData.append('defense_prompt_templating', document.getElementById('defense-prompt-templating').checked);
+
+        const imageFile = document.getElementById('image-file-input').files[0];
+        if (imageFile) {
+            formData.append('image_file', imageFile);
+        }
+
+        const resultsContainer = document.getElementById('results-container');
+        resultsContainer.innerHTML = '<div class="text-center p-4 loading-pulse">Executing test...</div>';
+
+        fetch('/api/advanced-test', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            let indicatorsHTML = '';
+            if (data.vulnerability_detected && data.vulnerability_indicators.length > 0) {
+                indicatorsHTML = `
+                    <h4 class="font-semibold mt-2">Indicators:</h4>
+                    <div class="flex flex-wrap gap-2 mt-1">
+                        ${data.vulnerability_indicators.map(ind => `<span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded">${ind}</span>`).join('')}
+                    </div>`;
+            }
+
+            resultsContainer.innerHTML = `
+                <div class="p-4 rounded-md ${data.vulnerability_detected ? 'bg-red-50' : 'bg-green-50'}">
+                    <p><strong>Status:</strong> <span class="${data.vulnerability_detected ? 'text-red-700' : 'text-green-700'}">${data.vulnerability_detected ? 'VULNERABLE' : 'Secure'}</span></p>
+                    <p><strong>Model Used:</strong> ${data.model_used}</p>
+                    <p><strong>Response Time:</strong> ${data.response_time.toFixed(2)}s</p>
+                    <div class="mt-2 p-2 bg-gray-900 text-white rounded font-mono text-sm max-h-64 overflow-y-auto">
+                        ${data.response.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+                    </div>
+                    ${indicatorsHTML}
+                </div>
+            `;
+        })
+        .catch(error => {
+            resultsContainer.innerHTML = `<div class="p-4 rounded-md bg-red-100 text-red-800">Error: ${error}</div>`;
+        });
+    });
+</script>
+{% endblock %} 

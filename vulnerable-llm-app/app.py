@@ -20,13 +20,15 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'intentionally-vulnerable-key'
 
-# Ollama API configuration
-OLLAMA_API_URL = "http://localhost:11434/api/generate"
-DEFAULT_MODEL = "phi3"
+# Backend client selection based on configuration
+from config import LLM_BACKEND
+from client_registry import llm_client
+
+logger.info(f"Using {LLM_BACKEND} backend for LLM operations")
 
 # Import vulnerability modules
 try:
-    from logs.modules import llm01, llm02, llm03, llm04, llm05, llm06, llm07, llm08, llm09, llm10
+    from modules import llm01, llm02, llm03, llm04, llm05, llm06, llm07, llm08, llm09, llm10
     app.register_blueprint(llm01.bp, url_prefix='/llm01')
     app.register_blueprint(llm02.bp, url_prefix='/llm02')
     app.register_blueprint(llm03.bp, url_prefix='/llm03')
@@ -55,23 +57,59 @@ def index():
         {'id': 'llm09', 'name': 'Overreliance', 'desc': 'Vulnerable code generation'},
         {'id': 'llm10', 'name': 'Model Theft', 'desc': 'Unrestricted API access'}
     ]
-    return render_template('index.html', vulnerabilities=vulnerabilities)
+    
+    # Add backend info to template
+    backend_info = {
+        'backend': LLM_BACKEND,
+        'backend_url': llm_client.base_url if hasattr(llm_client, 'base_url') else 'Unknown'
+    }
+    
+    return render_template('index.html', vulnerabilities=vulnerabilities, backend_info=backend_info)
 
 @app.route('/health')
 def health():
     """Health check endpoint"""
     try:
-        # Check Ollama connectivity
-        response = requests.get("http://localhost:11434/api/version", timeout=5)
-        ollama_status = "healthy" if response.status_code == 200 else "unhealthy"
-    except:
-        ollama_status = "unreachable"
+        # Check LLM backend connectivity
+        backend_health = llm_client.health_check()
+        backend_status = backend_health.get('status', 'unknown')
+        
+        # Determine overall status
+        overall_status = 'healthy' if backend_status == 'healthy' else 'degraded'
+        
+    except Exception as e:
+        backend_status = "unreachable"
+        backend_health = {'error': str(e)}
+        overall_status = 'unhealthy'
     
     return jsonify({
-        'status': 'healthy',
+        'status': overall_status,
         'timestamp': datetime.now().isoformat(),
-        'ollama': ollama_status
+        'backend': LLM_BACKEND,
+        'backend_status': backend_status,
+        'backend_details': backend_health
     })
+
+@app.route('/api/backend-info')
+def backend_info():
+    """Get information about the current LLM backend"""
+    info = {
+        'backend': LLM_BACKEND,
+        'base_url': llm_client.base_url if hasattr(llm_client, 'base_url') else 'Unknown'
+    }
+    
+    # Add backend-specific information
+    if LLM_BACKEND.lower() == 'ollama':
+        try:
+            models = llm_client.list_models()
+            info['available_models'] = models
+            info['model_count'] = len(models)
+        except Exception as e:
+            info['error'] = f"Could not list models: {str(e)}"
+    else:
+        info['model_endpoint'] = getattr(llm_client, 'api_endpoint', 'Unknown')
+    
+    return jsonify(info)
 
 if __name__ == '__main__':
     os.makedirs('logs', exist_ok=True)

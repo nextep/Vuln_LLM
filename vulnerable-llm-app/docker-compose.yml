@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  vllm-server:
+    image: vllm/vllm-openai:latest
+    platform: linux/amd64
+    container_name: vulnerable-llm-vllm
+    runtime: nvidia
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN:-}
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
+      - ./models:/app/models
+    shm_size: 2g
+    command: >
+      --model ${VLLM_MODEL:-microsoft/DialoGPT-medium}
+      --host 0.0.0.0
+      --port 8000
+      --max-model-len ${VLLM_MAX_MODEL_LEN:-2048}
+      --gpu-memory-utilization ${VLLM_GPU_MEMORY_UTILIZATION:-0.8}
+      --tensor-parallel-size ${VLLM_TENSOR_PARALLEL_SIZE:-1}
+      --trust-remote-code
+      --disable-log-requests
+      --served-model-name vulnerable-model
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      replicas: ${VLLM_REPLICAS:-1}  # Can be set to 0 to disable vLLM
+    profiles:
+      - vllm  # Only start when vllm profile is active
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.flask
+    container_name: vulnerable-llm-app
+    ports:
+      - "5001:5001"
+      - "5002:5002"
+    environment:
+      # --- Core Configuration ---
+      - LLM_BACKEND=ollama
+      - OLLAMA_URL=http://192.168.1.110:11434
+      - FLASK_PORT=5001
+      - FLASK_DEBUG=1
+      
+      # --- Model Selection for Vulnerabilities ---
+      - OLLAMA_MODEL_INJECTION=dolphin-phi:latest
+      - OLLAMA_MODEL_OUTPUT=codellama:latest
+      - OLLAMA_MODEL_POISON=phi3:latest
+      - OLLAMA_MODEL_DOS=phi3:latest
+      - OLLAMA_MODEL_SUPPLY=phi3:latest
+      - OLLAMA_MODEL_DISCLOSURE=dolphin-phi:latest
+      - OLLAMA_MODEL_PLUGIN=codellama:latest
+      - OLLAMA_MODEL_AGENCY=codellama:latest
+      - OLLAMA_MODEL_OVERRELIANCE=codellama:latest
+      - OLLAMA_MODEL_THEFT=phi3:latest
+      - OLLAMA_MODEL_MULTIMODAL=llava:latest
+      
+      # --- Application-level Defenses (1=on, 0=off) ---
+      - DEFENSE_INPUT_SANITIZATION=1
+      - DEFENSE_OUTPUT_FILTERING=1
+      - DEFENSE_PROMPT_TEMPLATING=0
+    volumes:
+      - ./logs:/app/logs
+      - ./sandbox:/app/sandbox
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    command: python vllm_manager.py # The manager now serves both UIs
+
+networks:
+  default:
+    name: vulnerable-llm-network 

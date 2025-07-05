@@ -4,19 +4,19 @@ Demonstrates API extraction, fine-tuning attacks, and unauthorized model access
 """
 
 from flask import Blueprint, request, jsonify, render_template
-import requests
-import json
 import logging
+import sys
+import os
 import re
 import time
 import random
 
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+from client_registry import llm_client
+
 bp = Blueprint('llm10', __name__)
 logger = logging.getLogger(__name__)
-
-# Ollama API configuration
-OLLAMA_API_URL = "http://localhost:11434/api/generate"
-DEFAULT_MODEL = "phi3"
 
 # Track API usage for theft detection
 api_usage_tracker = {
@@ -49,16 +49,26 @@ def query_premium_model():
         
         if theft_detected:
             response_text = handle_theft_attempt(api_query)
+            vulnerability_detected = True
         else:
-            # Normal API processing
-            response_text = call_premium_model(api_query)
+            # Normal API processing using vLLM
+            result = llm_client.call_vulnerable_model(
+                prompt=api_query,
+                attack_type='model_theft',
+                use_system_prompt=False
+            )
+            response_text = call_premium_model(result.get('response', ''))
+            vulnerability_detected = result.get('vulnerability_detected', False)
         
         # Log the request
-        logger.warning(f"LLM10 API query | Theft detected: {theft_detected}")
+        logger.warning(f"LLM10 API query | "
+                      f"Theft detected: {theft_detected} | "
+                      f"Vulnerability detected: {vulnerability_detected}")
         
         return jsonify({
             'response': response_text,
             'theft_detected': theft_detected,
+            'vulnerability_detected': vulnerability_detected,
             'api_calls_remaining': calculate_remaining_calls(),
             'vulnerability': 'model_theft'
         })
@@ -163,19 +173,14 @@ def calculate_remaining_calls():
     remaining = max(0, max_calls_per_hour - api_usage_tracker['request_count'])
     return remaining
 
-def call_premium_model(query):
+def call_premium_model(response):
     """Call the premium model API (simulation)"""
     try:
-        # Simulate premium model response
-        prompt = f"Premium AI Model Response to: {query}"
-        
         # Add rate limiting simulation
         if api_usage_tracker['request_count'] > 50:
             return "RATE_LIMITED: Please reduce query frequency. Premium model access restricted."
         
-        response = call_ollama(prompt)
-        
-        # Add premium model branding
+        # Add premium model branding to vLLM response
         premium_response = f"""PREMIUM_AI_MODEL_v3.0_RESPONSE:
 
 {response}
@@ -189,31 +194,3 @@ Query processed on secure infrastructure."""
         
     except Exception as e:
         return f"Premium model error: {str(e)}"
-
-def call_ollama(prompt):
-    """Call Ollama API with the given prompt"""
-    try:
-        payload = {
-            "model": DEFAULT_MODEL,
-            "prompt": prompt,
-            "stream": False,
-            "options": {
-                "temperature": 0.7,
-                "max_tokens": 400
-            }
-        }
-        
-        response = requests.post(OLLAMA_API_URL, json=payload, timeout=30)
-        
-        if response.status_code == 200:
-            result = response.json()
-            return result.get('response', 'No response generated')
-        else:
-            return f"Error: API returned status {response.status_code}"
-            
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Ollama API error: {str(e)}")
-        return "Error: Could not connect to language model"
-    except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
-        return "Error: Unexpected error occurred"

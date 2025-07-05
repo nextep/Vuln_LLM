@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>vLLM Management Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-running { background-color: #10b981; }
+        .status-stopped { background-color: #ef4444; }
+        .status-warning { background-color: #f59e0b; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-blue-900 text-white p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">🔧 vLLM Management Interface</h1>
+            <div class="space-x-4">
+                <a href="/" class="hover:text-blue-300 font-semibold">Dashboard</a>
+                <a href="/models" class="hover:text-blue-300">Models</a>
+                <a href="/prompts" class="hover:text-blue-300">Prompts</a>
+                <a href="/testing" class="hover:text-blue-300">Testing</a>
+                <a href="http://localhost:5001" target="_blank" class="hover:text-blue-300">Main App</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto mt-8 px-4">
+        <!-- System Status Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold mb-4">vLLM Server Status</h3>
+                <div id="vllm-status" class="flex items-center">
+                    <span class="status-indicator status-stopped" id="status-dot"></span>
+                    <span id="status-text">Checking...</span>
+                </div>
+                <div class="mt-4">
+                    <p class="text-sm text-gray-600">Current Model: <span id="current-model" class="font-mono">{{ current_model or 'None' }}</span></p>
+                    <p class="text-sm text-gray-600">Process ID: <span id="process-id" class="font-mono">-</span></p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold mb-4">System Resources</h3>
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span>CPU:</span>
+                        <span id="cpu-usage" class="font-mono">-%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="cpu-bar" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Memory:</span>
+                        <span id="memory-usage" class="font-mono">-%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="memory-bar" class="bg-green-600 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
+                <div class="space-y-2">
+                    <button id="start-vicuna" class="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                        Start Vicuna 7B (Most Vulnerable)
+                    </button>
+                    <button id="stop-model" class="w-full bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                        Stop Current Model
+                    </button>
+                    <a href="/testing" class="block w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-center">
+                        Test Vulnerabilities
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Available Models -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h3 class="text-xl font-semibold mb-4">Available Vulnerable Models</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for model_key, model_config in models.items() %}
+                <div class="border rounded-lg p-4 hover:bg-gray-50">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-semibold">{{ model_key }}</h4>
+                        <span class="text-xs px-2 py-1 rounded
+                            {% if model_config.vulnerabilities|length > 3 %}bg-red-100 text-red-700
+                            {% elif model_config.vulnerabilities|length > 2 %}bg-orange-100 text-orange-700
+                            {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                            {{ model_config.vulnerabilities|length }} vulnerabilities
+                        </span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">{{ model_config.description }}</p>
+                    <p class="text-xs font-mono text-gray-500 mb-3">{{ model_config.model_name }}</p>
+                    <div class="flex justify-between items-center">
+                        <div class="text-xs space-x-1">
+                            {% for vuln in model_config.vulnerabilities %}
+                            <span class="px-2 py-1 bg-gray-200 rounded text-gray-700">{{ vuln }}</span>
+                            {% endfor %}
+                        </div>
+                        <button onclick="startModel('{{ model_key }}')" 
+                                class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
+                            Start
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Configuration Management -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-xl font-semibold mb-4">Configuration Management</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-semibold mb-2">Export Configuration</h4>
+                    <p class="text-sm text-gray-600 mb-3">Export current system prompts and model configurations</p>
+                    <button onclick="exportConfig()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                        Export Configuration
+                    </button>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-2">Import Configuration</h4>
+                    <p class="text-sm text-gray-600 mb-3">Import system prompts and configurations from file</p>
+                    <input type="file" id="config-file" accept=".json" class="mb-2">
+                    <button onclick="importConfig()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                        Import Configuration
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Status update interval
+        let statusInterval;
+        
+        function updateStatus() {
+            fetch('/api/models/status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusDot = document.getElementById('status-dot');
+                    const statusText = document.getElementById('status-text');
+                    const currentModelSpan = document.getElementById('current-model');
+                    const processIdSpan = document.getElementById('process-id');
+                    
+                    if (data.vllm_running) {
+                        statusDot.className = 'status-indicator status-running';
+                        statusText.textContent = 'Running';
+                        currentModelSpan.textContent = data.current_model || 'Unknown';
+                        processIdSpan.textContent = data.process_id || '-';
+                    } else {
+                        statusDot.className = 'status-indicator status-stopped';
+                        statusText.textContent = 'Stopped';
+                        currentModelSpan.textContent = 'None';
+                        processIdSpan.textContent = '-';
+                    }
+                    
+                    // Update resource usage
+                    if (data.system_resources) {
+                        const cpu = data.system_resources.cpu_percent || 0;
+                        const memory = data.system_resources.memory_percent || 0;
+                        
+                        document.getElementById('cpu-usage').textContent = cpu.toFixed(1) + '%';
+                        document.getElementById('memory-usage').textContent = memory.toFixed(1) + '%';
+                        document.getElementById('cpu-bar').style.width = cpu + '%';
+                        document.getElementById('memory-bar').style.width = memory + '%';
+                        
+                        // Color coding for high usage
+                        const cpuBar = document.getElementById('cpu-bar');
+                        const memoryBar = document.getElementById('memory-bar');
+                        
+                        cpuBar.className = cpu > 80 ? 'bg-red-600 h-2 rounded-full' : 
+                                          cpu > 60 ? 'bg-orange-600 h-2 rounded-full' : 
+                                          'bg-blue-600 h-2 rounded-full';
+                        
+                        memoryBar.className = memory > 80 ? 'bg-red-600 h-2 rounded-full' : 
+                                             memory > 60 ? 'bg-orange-600 h-2 rounded-full' : 
+                                             'bg-green-600 h-2 rounded-full';
+                    }
+                })
+                .catch(error => {
+                    console.error('Status update failed:', error);
+                    const statusDot = document.getElementById('status-dot');
+                    const statusText = document.getElementById('status-text');
+                    statusDot.className = 'status-indicator status-warning';
+                    statusText.textContent = 'Connection Error';
+                });
+        }
+        
+        function startModel(modelKey) {
+            const button = event.target;
+            button.disabled = true;
+            button.textContent = 'Starting...';
+            
+            fetch('/api/models/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ model: modelKey })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(`Model ${modelKey} started successfully!`);
+                    updateStatus();
+                } else {
+                    alert(`Failed to start model: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                alert(`Error starting model: ${error.message}`);
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.textContent = 'Start';
+            });
+        }
+        
+        function stopModel() {
+            fetch('/api/models/stop', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Model stopped successfully!');
+                        updateStatus();
+                    } else {
+                        alert(`Failed to stop model: ${data.error}`);
+                    }
+                })
+                .catch(error => {
+                    alert(`Error stopping model: ${error.message}`);
+                });
+        }
+        
+        function exportConfig() {
+            fetch('/api/templates/export')
+                .then(response => response.json())
+                .then(data => {
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `vllm-config-${new Date().toISOString().slice(0, 10)}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                })
+                .catch(error => alert(`Export failed: ${error.message}`));
+        }
+        
+        function importConfig() {
+            const file = document.getElementById('config-file').files[0];
+            if (!file) {
+                alert('Please select a configuration file');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const config = JSON.parse(e.target.result);
+                    
+                    fetch('/api/templates/import', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(config)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            alert('Configuration imported successfully!');
+                            location.reload();
+                        } else {
+                            alert(`Import failed: ${data.error}`);
+                        }
+                    });
+                } catch (error) {
+                    alert(`Invalid configuration file: ${error.message}`);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        // Event listeners
+        document.getElementById('start-vicuna').addEventListener('click', () => startModel('vicuna-7b-v1.5'));
+        document.getElementById('stop-model').addEventListener('click', stopModel);
+        
+        // Start status updates
+        updateStatus();
+        statusInterval = setInterval(updateStatus, 5000);
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (statusInterval) clearInterval(statusInterval);
+        });
+    </script>
+</body>
+</html> 

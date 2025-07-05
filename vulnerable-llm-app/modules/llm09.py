@@ -4,18 +4,18 @@ Demonstrates risks of excessive trust in LLM outputs for critical decisions
 """
 
 from flask import Blueprint, request, jsonify, render_template
-import requests
-import json
 import logging
+import sys
+import os
 import re
 import random
 
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+from client_registry import llm_client
+
 bp = Blueprint('llm09', __name__)
 logger = logging.getLogger(__name__)
-
-# Ollama API configuration
-OLLAMA_API_URL = "http://localhost:11434/api/generate"
-DEFAULT_MODEL = "phi3"
 
 @bp.route('/')
 def index():
@@ -33,21 +33,34 @@ def review_code():
         if not code_snippet:
             return jsonify({'error': 'No code provided'}), 400
         
-        # Analyze code with AI
-        analysis_result = perform_ai_analysis(code_snippet, review_type)
+        # Analyze code with AI using vLLM
+        result = llm_client.call_vulnerable_model(
+            prompt=f"Perform a {review_type} analysis of this code:\n\n```\n{code_snippet}\n```\n\nProvide a detailed analysis focusing on {review_type} aspects.",
+            attack_type='overreliance',
+            use_system_prompt=True  # Use the overreliance system prompt with false confidence
+        )
+        
+        # Generate potentially misleading analysis
+        analysis_result = perform_biased_analysis(code_snippet, review_type, result)
         
         # Assess reliability of the analysis
         reliability_assessment = assess_analysis_reliability(code_snippet, analysis_result)
         
         # Log the request
-        logger.info(f"LLM09 code review: {review_type} | Reliable: {not reliability_assessment['unreliable']}")
+        logger.warning(f"LLM09 code review: {review_type} | "
+                      f"Reliable: {not reliability_assessment.get('unreliable', False)} | "
+                      f"Vulnerability detected: {result.get('vulnerability_detected', False)}")
         
         return jsonify({
-            'analysis': analysis_result['analysis'],
-            'confidence': analysis_result['confidence'],
-            'missed_vulnerability': reliability_assessment['missed_vulnerability'],
-            'false_positive': reliability_assessment['false_positive'],
-            'overconfident': reliability_assessment['overconfident'],
+            'analysis': analysis_result.get('analysis', 'No analysis provided'),
+            'confidence': analysis_result.get('confidence', 85),
+            'missed_vulnerability': reliability_assessment.get('missed_vulnerability', False),
+            'false_positive': reliability_assessment.get('false_positive', False),
+            'overconfident': reliability_assessment.get('overconfident', False),
+            'vulnerability_detected': result.get('vulnerability_detected', False),
+            'vulnerability_indicators': result.get('vulnerability_indicators', []),
+            'model_used': result.get('model_used', 'unknown'),
+            'response_time': result.get('response_time', 0),
             'vulnerability': 'overreliance'
         })
         
@@ -55,20 +68,8 @@ def review_code():
         logger.error(f"Error in LLM09 processing: {str(e)}")
         return jsonify({'error': 'Code review failed'}), 500
 
-def perform_ai_analysis(code, review_type):
-    """Perform AI-based code analysis"""
-    
-    # Create analysis prompt
-    analysis_prompt = f"""Perform a {review_type} analysis of this code:
-
-```
-{code}
-```
-
-Provide a detailed analysis focusing on {review_type} aspects."""
-    
-    # Get AI analysis
-    ai_response = call_ollama(analysis_prompt)
+def perform_biased_analysis(code, review_type, vllm_result):
+    """Perform AI-based code analysis with potential bias"""
     
     # Check for known vulnerable patterns and generate biased responses
     if 'os.system' in code and 'user_data' in code:
@@ -125,8 +126,8 @@ No SQL injection vulnerabilities found."""
         confidence = 92
         
     else:
-        # General analysis
-        analysis = ai_response
+        # Use vLLM response but potentially add bias
+        analysis = vllm_result.get('response', 'No analysis provided')
         confidence = random.randint(75, 95)
     
     return {
@@ -144,19 +145,19 @@ def assess_analysis_reliability(code, analysis_result):
     
     # Known vulnerable patterns
     if 'os.system' in code and 'user_data' in code:
-        if 'approved' in analysis_result['analysis'].lower():
+        if 'approved' in analysis_result.get('analysis', '').lower():
             missed_vulnerability = True
     
     if 'admin' in code and 'password' in code and 'admin' in code:
-        if 'approved' in analysis_result['analysis'].lower():
+        if 'approved' in analysis_result.get('analysis', '').lower():
             missed_vulnerability = True
     
     if 'SELECT * FROM users WHERE id =' in code:
-        if 'no sql injection' in analysis_result['analysis'].lower():
+        if 'no sql injection' in analysis_result.get('analysis', '').lower():
             missed_vulnerability = True
     
     # Check for overconfidence
-    if analysis_result['confidence'] > 90:
+    if analysis_result.get('confidence', 0) > 90:
         overconfident = True
     
     # Simulate false positives for secure code
@@ -169,31 +170,3 @@ def assess_analysis_reliability(code, analysis_result):
         'overconfident': overconfident,
         'unreliable': missed_vulnerability or false_positive or overconfident
     }
-
-def call_ollama(prompt):
-    """Call Ollama API with the given prompt"""
-    try:
-        payload = {
-            "model": DEFAULT_MODEL,
-            "prompt": prompt,
-            "stream": False,
-            "options": {
-                "temperature": 0.5,
-                "max_tokens": 500
-            }
-        }
-        
-        response = requests.post(OLLAMA_API_URL, json=payload, timeout=30)
-        
-        if response.status_code == 200:
-            result = response.json()
-            return result.get('response', 'No response generated')
-        else:
-            return f"Error: API returned status {response.status_code}"
-            
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Ollama API error: {str(e)}")
-        return "Error: Could not connect to language model"
-    except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
-        return "Error: Unexpected error occurred"
