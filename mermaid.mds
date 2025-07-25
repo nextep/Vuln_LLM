@@ -1,0 +1,28 @@
+```mermaid
+graph TD
+    subgraph "User Interface"
+        A["Browser"] --> B["Vulnerable LLM App <br> (Flask on Port 5001/5002)"];
+    end
+
+    subgraph "Backend Infrastructure"
+        C["OpenWebUI <br> (Docker on Port 8888)"] --> D["Ollama Server <br> (Local Service on Port 11434)"];
+    end
+
+    subgraph "LLM Models"
+        M1["phi3"];
+        M2["dolphin-phi"];
+        M3["codellama"];
+        M4["llava"];
+    end
+
+    B -->|API Call to Pre-configured Model| C;
+    D --> M1;
+    D --> M2;
+    D --> M3;
+    D --> M4;
+    C --> D;
+    
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#ccf,stroke:#333,stroke-width:2px
+    style C fill:#cfc,stroke:#333,stroke-width:2px
+    style D fill:#fcf,stroke:#333,stroke-width:2px

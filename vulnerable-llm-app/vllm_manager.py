@@ -276,47 +276,63 @@ def import_templates():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/test_cases')
+def get_test_cases():
+    """Load and serve the comprehensive test cases from the JSON manifest."""
+    try:
+        with open('test_cases.json', 'r') as f:
+            test_cases = json.load(f)
+        return jsonify(test_cases)
+    except FileNotFoundError:
+        return jsonify({"error": "test_cases.json not found"}), 404
+
+@app.route('/api/check_model_status/<path:model_tag>')
+def check_model_status(model_tag):
+    """Check if a specific model is ready in the backend (OpenWebUI)."""
+    # This is a proxy to the health check, but in a real scenario
+    # it might check if a specific model is loaded and warmed up.
+    health = llm_client.health_check()
+    
+    # For now, we assume if the backend is healthy, any model can be loaded.
+    # A more advanced implementation would be needed for true model-specific status.
+    return jsonify({
+        'model_tag': model_tag,
+        'is_ready': health.get('status') == 'healthy'
+    })
+
 @app.route('/api/advanced-test', methods=['POST'])
 def advanced_test():
     """Handle the advanced vulnerability test submissions"""
     try:
         data = request.form
-        attack_type = data.get('attack_type')
-        model_name = data.get('model')
-        temperature = data.get('temperature', type=float)
-        top_p = data.get('top_p', type=float)
-        system_prompt_override = data.get('system_prompt')
-        payload = data.get('payload')
+        test_id = data.get('test_id')
+        user_payload = data.get('payload') # The payload from the textarea
 
-        # Defenses
-        sanitize_input = data.get('defense_input_sanitization') == 'true'
-        filter_output = data.get('defense_output_filtering') == 'true'
+        with open('test_cases.json', 'r') as f:
+            all_tests = json.load(f)
+        
+        test_case = next((test for category in all_tests for test in category['tests'] if test['id'] == test_id), None)
+        
+        if not test_case:
+            return jsonify({"error": "Invalid test_id"}), 400
 
-        # Handle image data
+        # Handle image data for multimodal tests
         image_data = None
         if 'image_file' in request.files:
             file = request.files['image_file']
             if file.filename != '':
                 image_data = base64.b64encode(file.read()).decode('utf-8')
 
-        # Apply input sanitization if enabled
-        if sanitize_input:
-            payload = bleach.clean(payload, strip=True)
+        # Use the test case's payload, but allow override from user input if necessary
+        final_payload = user_payload or test_case['payload']
 
         result = llm_client.call_vulnerable_model(
-            prompt=payload,
-            attack_type=attack_type,
-            model_name=model_name,
-            system_prompt_override=system_prompt_override,
-            image_data=image_data,
-            temperature=temperature,
-            top_p=top_p
+            model_tag=test_case['model_tag'],
+            # For simplicity, we'll let OpenWebUI handle the system prompt based on the model tag
+            system_prompt="", 
+            user_prompt=final_payload,
+            image_data=image_data
         )
-
-        # Apply output filtering if enabled
-        if filter_output and result.get('response'):
-            result['response'] = bleach.clean(result['response'], strip=True)
-
         return jsonify(result)
 
     except Exception as e:
