@@ -36,18 +36,40 @@ graph TD
 
 ## 🚀 Quick Start Guide
 
-### 1. Prepare Your Models in OpenWebUI
-This is the most crucial step. You need to configure each test case as a separate "model" in OpenWebUI.
+### 1. Import Pre-configured Vulnerability Templates
 
--   **Go to your OpenWebUI dashboard** (e.g., `http://localhost:8888`).
--   Navigate to **Settings -> Models**.
--   Use the **"Import a model"** feature for each of the JSON files in the `openwebui_templates` directory. This will automatically create the following pre-configured models:
-    -   `LLM01 Prompt Injection Test`
-    -   `LLM02 Insecure Output Test`
-    -   `LLM06 Sensitive Info Disclosure Test`
-    -   `LLM08 Excessive Agency Test`
-    -   `LLM09 Overreliance Test`
-    -   `Multimodal Injection Test`
+**🚀 SIMPLIFIED SETUP** - All OWASP LLM Top 10 vulnerability templates are now provided!
+
+**Option A: Automated Import (Recommended)**
+```bash
+cd vulnerable-llm-app/openwebui_templates
+pip install requests
+python import_templates.py --url http://localhost:8888
+```
+
+**Option B: Manual Import**
+-   **Go to your OpenWebUI dashboard** (e.g., `http://localhost:8888`)
+-   Navigate to **Settings → Models**
+-   Use **"Import a model"** for each JSON file in `openwebui_templates/`
+
+**Available Templates:**
+-   🎯 `LLM01 Prompt Injection Test` + Jailbreak Variant
+-   🔓 `LLM02 Insecure Output Test` + XSS Generation Variant  
+-   🧠 `LLM03 Training Data Poisoning Test`
+-   💥 `LLM04 Model DoS Test`
+-   🔗 `LLM05 Supply Chain Compromise Test`
+-   🕵️ `LLM06 Sensitive Info Disclosure Test`
+-   🔌 `LLM07 Insecure Plugin Design Test` + **Vulnerable/Secure Tools Demo**
+-   🤖 `LLM08 Excessive Agency Test`
+-   🎭 `LLM09 Overreliance Test` + Code Reviewer Variant
+-   💎 `LLM10 Model Theft Test`
+-   🖼️ `Enhanced Multimodal Injection Test`
+-   🛡️ `Defense Prompt Demonstration` (NEW!)
+
+**🚀 Advanced Features** (NEW!)
+-   **Real Tools & Functions** - Vulnerable and secure implementations
+-   **Security Pipelines** - Real-time filtering and monitoring
+-   **Defense Prompts** - Hardened prompt engineering examples
 
 ### 2. Configure and Launch the Vulnerable App
 All configuration is now handled in `docker-compose.yml`.
