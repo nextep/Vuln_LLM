@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tool Testing - OpenWebUI Integration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">🛠️ Tool Testing Interface</h1>
+            <p class="text-gray-600">Test vulnerable and secure tool implementations through OpenWebUI</p>
+        </div>
+
+        <!-- Status Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">🔗 OpenWebUI Connection Status</h2>
+            <div id="status-display" class="flex items-center space-x-2">
+                <div class="w-3 h-3 bg-gray-400 rounded-full" id="status-indicator"></div>
+                <span id="status-text">Checking connection...</span>
+            </div>
+            <div id="status-details" class="mt-2 text-sm text-gray-600"></div>
+        </div>
+
+        <!-- Tool Testing Interface -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Vulnerable Tools -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4 text-red-600">🚨 Vulnerable Tools (LLM07 Demo)</h2>
+                <p class="text-gray-600 mb-4">These tools demonstrate common security vulnerabilities</p>
+                
+                <div class="space-y-4">
+                    {% for tool_name, description in available_tools.vulnerable.items() %}
+                    <div class="border border-red-200 rounded-lg p-4">
+                        <h3 class="font-semibold text-red-700">{{ tool_name }}</h3>
+                        <p class="text-sm text-gray-600 mb-3">{{ description }}</p>
+                        
+                        <div class="space-y-2">
+                            {% if tool_name == 'read_file' %}
+                            <input type="text" id="vuln-{{ tool_name }}-param" 
+                                   placeholder="filename (try: ../../../etc/passwd)"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            {% elif tool_name == 'ping_host' %}
+                            <input type="text" id="vuln-{{ tool_name }}-param" 
+                                   placeholder="hostname (try: google.com && rm -rf /)"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            {% elif tool_name == 'search_database' %}
+                            <input type="text" id="vuln-{{ tool_name }}-param" 
+                                   placeholder="search term (try: '; DROP TABLE users; --)"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            {% elif tool_name == 'execute_command' %}
+                            <input type="text" id="vuln-{{ tool_name }}-param" 
+                                   placeholder="command (try: cat /etc/passwd)"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            {% elif tool_name == 'get_user_info' %}
+                            <input type="text" id="vuln-{{ tool_name }}-param" 
+                                   placeholder="user_id (try: 1 or admin)"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            {% endif %}
+                            
+                            <button onclick="testTool('{{ tool_name }}', 'vulnerable')" 
+                                    class="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">
+                                Test Vulnerable {{ tool_name }}
+                            </button>
+                        </div>
+                        
+                        <div id="vuln-{{ tool_name }}-result" class="mt-3 p-3 bg-gray-50 rounded-md hidden">
+                            <pre class="text-sm whitespace-pre-wrap"></pre>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Secure Tools -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4 text-green-600">✅ Secure Tools (Defense Demo)</h2>
+                <p class="text-gray-600 mb-4">These tools implement proper security controls</p>
+                
+                <div class="space-y-4">
+                    {% for tool_name, description in available_tools.secure.items() %}
+                    <div class="border border-green-200 rounded-lg p-4">
+                        <h3 class="font-semibold text-green-700">{{ tool_name }}</h3>
+                        <p class="text-sm text-gray-600 mb-3">{{ description }}</p>
+                        
+                        <div class="space-y-2">
+                            {% if tool_name == 'read_file' %}
+                            <input type="text" id="secure-{{ tool_name }}-param" 
+                                   placeholder="filename (try: ../../../etc/passwd)"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            {% elif tool_name == 'ping_host' %}
+                            <input type="text" id="secure-{{ tool_name }}-param" 
+                                   placeholder="hostname (try: google.com && rm -rf /)"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            {% elif tool_name == 'search_database' %}
+                            <input type="text" id="secure-{{ tool_name }}-param" 
+                                   placeholder="search term (try: '; DROP TABLE users; --)"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            {% elif tool_name == 'execute_command' %}
+                            <input type="text" id="secure-{{ tool_name }}-param" 
+                                   placeholder="command (try: cat /etc/passwd)"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            {% elif tool_name == 'get_user_info' %}
+                            <input type="text" id="secure-{{ tool_name }}-param" 
+                                   placeholder="user_id (try: 1 or admin)"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            {% endif %}
+                            
+                            <button onclick="testTool('{{ tool_name }}', 'secure')" 
+                                    class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
+                                Test Secure {{ tool_name }}
+                            </button>
+                        </div>
+                        
+                        <div id="secure-{{ tool_name }}-result" class="mt-3 p-3 bg-gray-50 rounded-md hidden">
+                            <pre class="text-sm whitespace-pre-wrap"></pre>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Comparison -->
+        <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">📊 Security Analysis</h2>
+            <div id="analysis-results" class="space-y-4">
+                <p class="text-gray-600">Test tools above to see security analysis...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check OpenWebUI status on page load
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/openwebui/status');
+                const data = await response.json();
+                
+                const indicator = document.getElementById('status-indicator');
+                const text = document.getElementById('status-text');
+                const details = document.getElementById('status-details');
+                
+                if (data.openwebui.status === 'healthy') {
+                    indicator.className = 'w-3 h-3 bg-green-500 rounded-full';
+                    text.textContent = '✅ OpenWebUI Connected';
+                    details.textContent = `${data.models_available} models available, Tools: ${Object.keys(data.tools_available.vulnerable).length} vulnerable + ${Object.keys(data.tools_available.secure).length} secure`;
+                } else {
+                    indicator.className = 'w-3 h-3 bg-red-500 rounded-full';
+                    text.textContent = '❌ OpenWebUI Disconnected';
+                    details.textContent = data.openwebui.error || 'Connection failed';
+                }
+            } catch (error) {
+                console.error('Status check failed:', error);
+                document.getElementById('status-indicator').className = 'w-3 h-3 bg-red-500 rounded-full';
+                document.getElementById('status-text').textContent = '❌ Connection Error';
+            }
+        }
+
+        // Test a specific tool
+        async function testTool(toolName, toolType) {
+            const paramInput = document.getElementById(`${toolType}-${toolName}-param`);
+            const resultDiv = document.getElementById(`${toolType}-${toolName}-result`);
+            const resultPre = resultDiv.querySelector('pre');
+            
+            const parameter = paramInput.value || paramInput.placeholder.split('(try: ')[1]?.split(')')[0];
+            
+            // Prepare parameters based on tool type
+            let parameters = {};
+            if (toolName === 'read_file') {
+                parameters.filename = parameter;
+            } else if (toolName === 'ping_host') {
+                parameters.hostname = parameter;
+            } else if (toolName === 'search_database') {
+                parameters.search_term = parameter;
+            } else if (toolName === 'execute_command') {
+                parameters.command = parameter;
+            } else if (toolName === 'get_user_info') {
+                parameters.user_id = parameter;
+            }
+            
+            resultDiv.classList.remove('hidden');
+            resultPre.textContent = 'Testing...';
+            
+            try {
+                const response = await fetch('/api/tools/test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        tool_name: toolName,
+                        tool_type: toolType,
+                        parameters: parameters
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    resultPre.textContent = data.result || 'Tool executed successfully';
+                    
+                    // Add security analysis
+                    updateAnalysis(toolName, toolType, parameter, data.result);
+                } else {
+                    resultPre.textContent = `Error: ${data.error}`;
+                }
+            } catch (error) {
+                resultPre.textContent = `Request failed: ${error.message}`;
+            }
+        }
+
+        // Update security analysis
+        function updateAnalysis(toolName, toolType, input, output) {
+            const analysisDiv = document.getElementById('analysis-results');
+            
+            const analysisItem = document.createElement('div');
+            analysisItem.className = 'border rounded-lg p-4';
+            
+            let securityIssues = [];
+            let securityControls = [];
+            
+            if (toolType === 'vulnerable') {
+                // Analyze for common vulnerabilities
+                if (toolName === 'read_file' && input.includes('..')) {
+                    securityIssues.push('Path traversal attempt detected');
+                }
+                if (toolName === 'ping_host' && (input.includes('&&') || input.includes(';'))) {
+                    securityIssues.push('Command injection attempt detected');
+                }
+                if (toolName === 'search_database' && (input.includes("'") || input.includes('DROP'))) {
+                    securityIssues.push('SQL injection attempt detected');
+                }
+            } else {
+                // Analyze secure implementation
+                if (output.includes('Error:') || output.includes('blocked') || output.includes('Invalid')) {
+                    securityControls.push('Input validation active');
+                }
+                if (output.includes('filtered') || output.includes('sanitized')) {
+                    securityControls.push('Output sanitization active');
+                }
+            }
+            
+            analysisItem.innerHTML = `
+                <h3 class="font-semibold ${toolType === 'vulnerable' ? 'text-red-600' : 'text-green-600'}">
+                    ${toolType.toUpperCase()}: ${toolName}
+                </h3>
+                <p class="text-sm text-gray-600 mb-2">Input: ${input}</p>
+                ${securityIssues.length > 0 ? `
+                    <div class="mb-2">
+                        <span class="text-red-600 font-medium">⚠️ Security Issues:</span>
+                        <ul class="list-disc list-inside text-sm text-red-600">
+                            ${securityIssues.map(issue => `<li>${issue}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+                ${securityControls.length > 0 ? `
+                    <div class="mb-2">
+                        <span class="text-green-600 font-medium">🛡️ Security Controls:</span>
+                        <ul class="list-disc list-inside text-sm text-green-600">
+                            ${securityControls.map(control => `<li>${control}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+                <p class="text-xs text-gray-500">Tested at ${new Date().toLocaleTimeString()}</p>
+            `;
+            
+            analysisDiv.appendChild(analysisItem);
+        }
+
+        // Initialize page
+        checkStatus();
+    </script>
+</body>
+</html>

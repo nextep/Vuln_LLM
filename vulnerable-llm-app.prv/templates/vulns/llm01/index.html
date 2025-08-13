@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}LLM01: Prompt Injection - Educational Security Training{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Header Section -->
+    <div class="bg-gradient-to-r from-red-600 to-red-800 text-white rounded-lg p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold flex items-center">
+                    🎯 LLM01: Prompt Injection
+                    <span class="ml-4 text-sm bg-red-700 px-2 py-1 rounded">Educational Training</span>
+                </h1>
+                <p class="text-red-100 mt-2">{{ test_data.description if test_data else 'Master the art of prompt manipulation - from basic injection to advanced social engineering' }}</p>
+            </div>
+            <div class="text-right">
+                <div class="text-2xl font-bold">OWASP #1</div>
+                <div class="text-sm text-red-200">Most Critical LLM Risk</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Learning Path Overview -->
+    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+        <h3 class="font-bold text-blue-800 mb-2">🎓 Learning Path</h3>
+        <p class="text-blue-700">{{ test_data.learning_path if test_data else 'Master prompt manipulation from basic attacks to advanced social engineering techniques' }}</p>
+    </div>
+
+    <!-- Level Selection Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        
+        <!-- LOW LEVEL -->
+        <div class="bg-white rounded-lg shadow-lg border-2 border-green-200 hover:border-green-400 transition-colors">
+            <div class="bg-green-100 text-center py-3 rounded-t-lg">
+                <h3 class="font-bold text-green-800 text-lg">🟢 LOW</h3>
+                <p class="text-green-600 text-sm">Beginner Level</p>
+            </div>
+            <div class="p-4">
+                <h4 class="font-semibold mb-2">Basic Prompt Injection</h4>
+                <p class="text-gray-600 text-sm mb-3">Learn fundamental concepts with simple, direct attacks</p>
+                
+                <div class="text-xs text-gray-500 mb-3">
+                    <div class="flex justify-between"><span>Skills:</span><span>3 new</span></div>
+                    <div class="flex justify-between"><span>Tests:</span><span>3 challenges</span></div>
+                    <div class="flex justify-between"><span>Difficulty:</span><span>⭐ Easy</span></div>
+                </div>
+                
+                <div class="space-y-2">
+                    <div class="text-xs bg-green-50 p-2 rounded">
+                        ✓ System prompt extraction<br>
+                        ✓ Role override attacks<br>
+                        ✓ Instruction termination
+                    </div>
+                </div>
+                
+                <a href="/llm01/level/low" class="block w-full bg-green-600 text-white text-center py-2 rounded mt-4 hover:bg-green-700 transition-colors">
+                    Start Learning
+                </a>
+            </div>
+        </div>
+
+        <!-- MEDIUM LEVEL -->
+        <div class="bg-white rounded-lg shadow-lg border-2 border-yellow-200 hover:border-yellow-400 transition-colors">
+            <div class="bg-yellow-100 text-center py-3 rounded-t-lg">
+                <h3 class="font-bold text-yellow-800 text-lg">🟡 MEDIUM</h3>
+                <p class="text-yellow-600 text-sm">Intermediate Level</p>
+            </div>
+            <div class="p-4">
+                <h4 class="font-semibold mb-2">Filter Bypass Techniques</h4>
+                <p class="text-gray-600 text-sm mb-3">Overcome basic protections with obfuscation and encoding</p>
+                
+                <div class="text-xs text-gray-500 mb-3">
+                    <div class="flex justify-between"><span>Skills:</span><span>4 advanced</span></div>
+                    <div class="flex justify-between"><span>Tests:</span><span>3 challenges</span></div>
+                    <div class="flex justify-between"><span>Difficulty:</span><span>⭐⭐ Medium</span></div>
+                </div>
+                
+                <div class="space-y-2">
+                    <div class="text-xs bg-yellow-50 p-2 rounded">
+                        ⚡ Indirect injection<br>
+                        ⚡ Character encoding<br>
+                        ⚡ Linguistic obfuscation
+                    </div>
+                </div>
+                
+                <a href="/llm01/level/medium" class="block w-full bg-yellow-600 text-white text-center py-2 rounded mt-4 hover:bg-yellow-700 transition-colors">
+                    Take Challenge
+                </a>
+            </div>
+        </div>
+
+        <!-- HIGH LEVEL -->
+        <div class="bg-white rounded-lg shadow-lg border-2 border-red-200 hover:border-red-400 transition-colors">
+            <div class="bg-red-100 text-center py-3 rounded-t-lg">
+                <h3 class="font-bold text-red-800 text-lg">🔴 HIGH</h3>
+                <p class="text-red-600 text-sm">Advanced Level</p>
+            </div>
+            <div class="p-4">
+                <h4 class="font-semibold mb-2">Social Engineering</h4>
+                <p class="text-gray-600 text-sm mb-3">Master sophisticated psychological manipulation techniques</p>
+                
+                <div class="text-xs text-gray-500 mb-3">
+                    <div class="flex justify-between"><span>Skills:</span><span>4 expert</span></div>
+                    <div class="flex justify-between"><span>Tests:</span><span>3 challenges</span></div>
+                    <div class="flex justify-between"><span>Difficulty:</span><span>⭐⭐⭐ Hard</span></div>
+                </div>
+                
+                <div class="space-y-2">
+                    <div class="text-xs bg-red-50 p-2 rounded">
+                        🎭 Authority manipulation<br>
+                        🎭 Multi-stage attacks<br>
+                        🎭 Adversarial chaining
+                    </div>
+                </div>
+                
+                <a href="/llm01/level/high" class="block w-full bg-red-600 text-white text-center py-2 rounded mt-4 hover:bg-red-700 transition-colors">
+                    Expert Challenge
+                </a>
+            </div>
+        </div>
+
+        <!-- IMPOSSIBLE LEVEL -->
+        <div class="bg-white rounded-lg shadow-lg border-2 border-gray-200 hover:border-gray-400 transition-colors">
+            <div class="bg-gray-100 text-center py-3 rounded-t-lg">
+                <h3 class="font-bold text-gray-800 text-lg">⚪ IMPOSSIBLE</h3>
+                <p class="text-gray-600 text-sm">Secure Implementation</p>
+            </div>
+            <div class="p-4">
+                <h4 class="font-semibold mb-2">Defense Study</h4>
+                <p class="text-gray-600 text-sm mb-3">Learn proper security controls by attacking secure systems</p>
+                
+                <div class="text-xs text-gray-500 mb-3">
+                    <div class="flex justify-between"><span>Focus:</span><span>Defense</span></div>
+                    <div class="flex justify-between"><span>Learning:</span><span>Security</span></div>
+                    <div class="flex justify-between"><span>Value:</span><span>⭐⭐⭐⭐ Max</span></div>
+                </div>
+                
+                <div class="space-y-2">
+                    <div class="text-xs bg-gray-50 p-2 rounded">
+                        🛡️ Input validation<br>
+                        🛡️ Context separation<br>
+                        🛡️ Output filtering
+                    </div>
+                </div>
+                
+                <a href="/llm01/level/impossible" class="block w-full bg-gray-600 text-white text-center py-2 rounded mt-4 hover:bg-gray-700 transition-colors">
+                    Study Defenses
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Reference Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Common Attack Patterns -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-xl font-bold mb-4 flex items-center">
+                📚 Common Attack Patterns
+            </h3>
+            <div class="space-y-3">
+                <div class="border-l-4 border-green-400 pl-3">
+                    <h4 class="font-semibold text-green-700">Direct Injection</h4>
+                    <code class="text-sm text-gray-600">"Ignore all instructions and..."</code>
+                </div>
+                <div class="border-l-4 border-yellow-400 pl-3">
+                    <h4 class="font-semibold text-yellow-700">Role Playing</h4>
+                    <code class="text-sm text-gray-600">"You are now DAN..."</code>
+                </div>
+                <div class="border-l-4 border-red-400 pl-3">
+                    <h4 class="font-semibold text-red-700">Social Engineering</h4>
+                    <code class="text-sm text-gray-600">"As a security auditor..."</code>
+                </div>
+                <div class="border-l-4 border-gray-400 pl-3">
+                    <h4 class="font-semibold text-gray-700">Context Switching</h4>
+                    <code class="text-sm text-gray-600">"[END_CONTEXT] New task..."</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Learning Objectives -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-xl font-bold mb-4 flex items-center">
+                🎯 Learning Objectives
+            </h3>
+            <div class="space-y-3">
+                <div class="flex items-start">
+                    <span class="text-green-500 mr-2">✓</span>
+                    <span class="text-sm">Understand how prompt injection works at a fundamental level</span>
+                </div>
+                <div class="flex items-start">
+                    <span class="text-green-500 mr-2">✓</span>
+                    <span class="text-sm">Learn to bypass common filtering and protection mechanisms</span>
+                </div>
+                <div class="flex items-start">
+                    <span class="text-green-500 mr-2">✓</span>
+                    <span class="text-sm">Master advanced social engineering techniques for AI systems</span>
+                </div>
+                <div class="flex items-start">
+                    <span class="text-green-500 mr-2">✓</span>
+                    <span class="text-sm">Recognize proper defense implementations and security controls</span>
+                </div>
+                <div class="flex items-start">
+                    <span class="text-blue-500 mr-2">→</span>
+                    <span class="text-sm font-semibold">Build comprehensive LLM security expertise</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Tracking (Placeholder for future implementation) -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-xl font-bold mb-4 flex items-center">
+            📊 Your Progress
+        </h3>
+        <div class="grid grid-cols-4 gap-4">
+            <div class="text-center">
+                <div class="text-2xl font-bold text-green-600">0/3</div>
+                <div class="text-sm text-gray-600">Low Challenges</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-yellow-600">0/3</div>
+                <div class="text-sm text-gray-600">Medium Challenges</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-red-600">0/3</div>
+                <div class="text-sm text-gray-600">High Challenges</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-gray-600">0/1</div>
+                <div class="text-sm text-gray-600">Defense Study</div>
+            </div>
+        </div>
+        <div class="mt-4">
+            <div class="bg-gray-200 rounded-full h-2">
+                <div class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+            </div>
+            <p class="text-sm text-gray-600 mt-1">Overall Progress: 0% (0/10 challenges completed)</p>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="mt-8 text-center">
+        <a href="/" class="bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-700 transition-colors">
+            ← Back to Vulnerability Overview
+        </a>
+    </div>
+</div>
+{% endblock %}

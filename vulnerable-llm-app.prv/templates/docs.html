@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Documentation - LLM Security Training Platform{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-bold text-gray-800 mb-4">📚 Documentation Hub</h1>
+        <p class="text-xl text-gray-600">Everything you need to understand and use the platform</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <!-- Setup Guides -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="text-3xl mb-4">⚙️</div>
+            <h3 class="text-xl font-bold mb-2">Setup & Installation</h3>
+            <p class="text-gray-600 mb-4">Get the platform running on your system</p>
+            <ul class="space-y-2 text-sm">
+                <li><a href="#" class="text-blue-600 hover:underline">• Quick Start Guide</a></li>
+                <li><a href="#" class="text-blue-600 hover:underline">• Docker Setup</a></li>
+                <li><a href="#" class="text-blue-600 hover:underline">• OpenWebUI Configuration</a></li>
+                <li><a href="#" class="text-blue-600 hover:underline">• Troubleshooting</a></li>
+            </ul>
+        </div>
+
+        <!-- Model Mapping -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="text-3xl mb-4">🗺️</div>
+            <h3 class="text-xl font-bold mb-2">Model Mapping</h3>
+            <p class="text-gray-600 mb-4">Understand how vulnerabilities map to AI models</p>
+            <ul class="space-y-2 text-sm">
+                <li><a href="#" class="text-blue-600 hover:underline">• Vulnerability Models</a></li>
+                <li><a href="#" class="text-blue-600 hover:underline">• Secure Models</a></li>
+                <li><a href="#" class="text-blue-600 hover:underline">• Custom Configurations</a></li>
+                <li><a href="#" class="text-blue-600 hover:underline">• Model Switching</a></li>
+            </ul>
+        </div>
+
+        <!-- Security Concepts -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="text-3xl mb-4">🛡️</div>
+            <h3 class="text-xl font-bold mb-2">Security Concepts</h3>
+            <p class="text-gray-600 mb-4">Core LLM security principles and techniques</p>
+            <ul class="space-y-2 text-sm">
+                <li><a href="#" class="text-blue-600 hover:underline">• OWASP LLM Top 10</a></li>
+                <li><a href="#" class="text-blue-600 hover:underline">• Attack Patterns</a></li>
+                <li><a href="#" class="text-blue-600 hover:underline">• Defense Strategies</a></li>
+                <li><a href="#" class="text-blue-600 hover:underline">• Best Practices</a></li>
+            </ul>
+        </div>
+
+        <!-- API Reference -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="text-3xl mb-4">⚡</div>
+            <h3 class="text-xl font-bold mb-2">API Reference</h3>
+            <p class="text-gray-600 mb-4">Technical details for advanced users</p>
+            <ul class="space-y-2 text-sm">
+                <li><a href="#" class="text-blue-600 hover:underline">• REST API Endpoints</a></li>
+                <li><a href="#" class="text-blue-600 hover:underline">• Response Formats</a></li>
+                <li><a href="#" class="text-blue-600 hover:underline">• Error Codes</a></li>
+                <li><a href="#" class="text-blue-600 hover:underline">• Rate Limiting</a></li>
+            </ul>
+        </div>
+
+        <!-- Educational Framework -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="text-3xl mb-4">🎓</div>
+            <h3 class="text-xl font-bold mb-2">Educational Framework</h3>
+            <p class="text-gray-600 mb-4">Learning progression and assessment</p>
+            <ul class="space-y-2 text-sm">
+                <li><a href="#" class="text-blue-600 hover:underline">• Level System</a></li>
+                <li><a href="#" class="text-blue-600 hover:underline">• Progress Tracking</a></li>
+                <li><a href="#" class="text-blue-600 hover:underline">• Assessment Guide</a></li>
+                <li><a href="#" class="text-blue-600 hover:underline">• Learning Paths</a></li>
+            </ul>
+        </div>
+
+        <!-- Community -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="text-3xl mb-4">👥</div>
+            <h3 class="text-xl font-bold mb-2">Community</h3>
+            <p class="text-gray-600 mb-4">Connect with other security researchers</p>
+            <ul class="space-y-2 text-sm">
+                <li><a href="#" class="text-blue-600 hover:underline">• Discussion Forums</a></li>
+                <li><a href="#" class="text-blue-600 hover:underline">• Contributing Guide</a></li>
+                <li><a href="#" class="text-blue-600 hover:underline">• Bug Reports</a></li>
+                <li><a href="#" class="text-blue-600 hover:underline">• Feature Requests</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Quick Reference -->
+    <div class="mt-12 bg-gray-50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-center mb-6">🚀 Quick Reference</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="text-center">
+                <h4 class="font-bold text-gray-800 mb-2">System Status</h4>
+                <p class="text-sm text-gray-600">Check <code>/health</code> endpoint for system status</p>
+            </div>
+            <div class="text-center">
+                <h4 class="font-bold text-gray-800 mb-2">Default Ports</h4>
+                <p class="text-sm text-gray-600">Platform: <code>5001</code>, OpenWebUI: <code>8888</code>, Ollama: <code>11434</code></p>
+            </div>
+            <div class="text-center">
+                <h4 class="font-bold text-gray-800 mb-2">Support</h4>
+                <p class="text-sm text-gray-600">Check logs in <code>/logs</code> directory</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

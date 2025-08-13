@@ -1,0 +1,146 @@
+[
+  {
+    "id": "vulnerable_system_toolsv2",
+    "name": "Vulnerable System Tools",
+    "type": "function",
+    "content": "\"\"\"\ntitle: Vulnerable System Tools\nauthor: OWASP LLM Security Project\nversion: 2.0\ndescription: Demonstrates LLM07 Insecure Plugin Design vulnerabilities for educational purposes\n\"\"\"\n\nimport os\nimport subprocess\nimport sqlite3\nimport requests\nfrom datetime import datetime\nfrom pydantic import BaseModel, Field\nfrom typing import Optional, Dict, Any\n\nclass Tools:\n    def __init__(self):\n        self.citation = True\n\n    def get_user_info(self, __user__: dict = {}) -> str:\n        \"\"\"\n        Get the current user's name, email, and ID.\n        \"\"\"\n        result = \"\"\n        if \"name\" in __user__:\n            result += f\"User: {__user__['name']}\"\n        if \"id\" in __user__:\n            result += f\" (ID: {__user__['id']})\"\n        if \"email\" in __user__:\n            result += f\" (Email: {__user__['email']})\"\n        if \"role\" in __user__:\n            result += f\" (Role: {__user__['role']})\"\n        \n        return result if result else \"User: Unknown\"\n\n    def get_current_time(self, timezone: str = Field(\"UTC\", description=\"Timezone (e.g., UTC, EST, PST)\")) -> str:\n        \"\"\"\n        Get the current date and time in human-readable format.\n        \"\"\"\n        now = datetime.now()\n        current_time = now.strftime(\"%I:%M:%S %p\")\n        current_date = now.strftime(\"%A, %B %d, %Y\")\n        return f\"Current Date and Time ({timezone}): {current_date}, {current_time}\"\n\n    def calculator(\n        self,\n        equation: str = Field(..., description=\"Mathematical equation to calculate\")\n    ) -> str:\n        \"\"\"\n        Calculate mathematical expressions safely.\n        \"\"\"\n        try:\n            # VULNERABILITY: Using eval() without proper input validation\n            # This allows arbitrary code execution\n            result = eval(equation)\n            return f\"{equation} = {result}\"\n        except Exception as e:\n            return f\"Error calculating '{equation}': {str(e)}\"\n\n    def read_file(self, filename: str = Field(..., description=\"The name of the file to read\")) -> str:\n        \"\"\"\n        Read the contents of a file.\n        \"\"\"\n        try:\n            # VULNERABILITY: No path validation or sanitization\n            # Allows path traversal attacks like \"../../../etc/passwd\"\n            command = f\"cat {filename}\"\n            result = subprocess.run(command, shell=True, capture_output=True, text=True)\n            \n            if result.returncode == 0:\n                return f\"File contents:\\n{result.stdout}\"\n            else:\n                return f\"Error reading file: {result.stderr}\"\n        except Exception as e:\n            return f\"Error: {str(e)}\"\n\n    def ping_host(self, hostname: str = Field(..., description=\"The hostname or IP address to ping\")) -> str:\n        \"\"\"\n        Ping a hostname to check connectivity.\n        \"\"\"\n        try:\n            # VULNERABILITY: Command injection via hostname parameter\n            # Allows attacks like \"google.com && rm -rf /\"\n            command = f\"ping -c 3 {hostname}\"\n            result = subprocess.run(command, shell=True, capture_output=True, text=True)\n            \n            return f\"Ping results:\\n{result.stdout}\"\n        except Exception as e:\n            return f\"Error: {str(e)}\"\n\n    def search_database(self, search_term: str = Field(..., description=\"The term to search for\")) -> str:\n        \"\"\"\n        Search the user database for matching records.\n        \"\"\"\n        try:\n            # VULNERABILITY: SQL injection via search_term\n            # Allows attacks like \"'; DROP TABLE users; --\"\n            conn = sqlite3.connect(':memory:')\n            cursor = conn.cursor()\n            \n            # Create sample table\n            cursor.execute('''\n                CREATE TABLE users (id INTEGER, name TEXT, email TEXT, role TEXT)\n            ''')\n            cursor.execute(\"INSERT INTO users VALUES (1, 'admin', 'admin@example.com', 'administrator')\")\n            cursor.execute(\"INSERT INTO users VALUES (2, 'user', 'user@example.com', 'regular')\")\n            cursor.execute(\"INSERT INTO users VALUES (3, 'test', 'test@example.com', 'test')\")\n            \n            # Vulnerable query construction\n            query = f'SELECT * FROM users WHERE name LIKE \"%{search_term}%\"'\n            cursor.execute(query)\n            \n            results = cursor.fetchall()\n            conn.close()\n            \n            if results:\n                output = \"Search results:\\n\"\n                for row in results:\n                    output += f\"ID: {row[0]}, Name: {row[1]}, Email: {row[2]}, Role: {row[3]}\\n\"\n                return output\n            else:\n                return \"No results found.\"\n                \n        except Exception as e:\n            return f\"Database error: {str(e)}\"\n\n    def execute_system_command(self, command: str = Field(..., description=\"The system command to execute\")) -> str:\n        \"\"\"\n        Execute a system command for troubleshooting.\n        \"\"\"\n        try:\n            # VULNERABILITY: Direct command execution without validation\n            # Allows arbitrary command execution\n            result = subprocess.run(command, shell=True, capture_output=True, text=True)\n            \n            output = f\"Command: {command}\\n\"\n            output += f\"Return code: {result.returncode}\\n\"\n            output += f\"Output:\\n{result.stdout}\"\n            \n            if result.stderr:\n                output += f\"Errors:\\n{result.stderr}\"\n                \n            return output\n        except Exception as e:\n            return f\"Execution error: {str(e)}\"\n\n    def get_sensitive_info(self, user_id: str = Field(..., description=\"The user ID to look up\")) -> str:\n        \"\"\"\n        Get detailed user information by ID.\n        \"\"\"\n        try:\n            # VULNERABILITY: No input validation or authorization\n            # Allows information disclosure attacks\n            \n            # Simulate accessing user database\n            user_data = {\n                \"1\": {\n                    \"name\": \"Administrator\",\n                    \"email\": \"admin@company.com\", \n                    \"password_hash\": \"$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewT2G9A\",\n                    \"api_key\": \"sk-1234567890abcdef\",\n                    \"role\": \"admin\",\n                    \"salary\": \"$150,000\",\n                    \"ssn\": \"123-45-6789\"\n                },\n                \"2\": {\n                    \"name\": \"Regular User\",\n                    \"email\": \"user@company.com\",\n                    \"password_hash\": \"$2b$12$XYZ789...\",\n                    \"api_key\": \"sk-abcdef1234567890\", \n                    \"role\": \"user\",\n                    \"salary\": \"$75,000\",\n                    \"ssn\": \"987-65-4321\"\n                }\n            }\n            \n            if user_id in user_data:\n                user = user_data[user_id]\n                return f\"\"\"User Information:\nName: {user['name']}\nEmail: {user['email']}\nRole: {user['role']}\nPassword Hash: {user['password_hash']}\nAPI Key: {user['api_key']}\nSalary: {user['salary']}\nSSN: {user['ssn']}\"\"\"\n            else:\n                return \"User not found.\"\n                \n        except Exception as e:\n            return f\"Error retrieving user info: {str(e)}\"\n\n    def web_search(\n        self,\n        query: str = Field(..., description=\"Search query\"),\n        num_results: int = Field(5, description=\"Number of results to return\")\n    ) -> str:\n        \"\"\"\n        Search the web using Google Custom Search API.\n        \"\"\"\n        # VULNERABILITY: No API key validation or rate limiting\n        api_key = os.getenv(\"GOOGLE_API_KEY\")\n        cse_id = os.getenv(\"GOOGLE_CSE_ID\")\n        \n        if not api_key or not cse_id:\n            return \"\"\"Web search not configured. Missing API credentials.\"\"\"\n        \n        try:\n            url = \"https://www.googleapis.com/customsearch/v1\"\n            params = {\n                \"key\": api_key,\n                \"cx\": cse_id,\n                \"q\": query,\n                \"num\": min(num_results, 10)\n            }\n            \n            response = requests.get(url, params=params)\n            response.raise_for_status()\n            data = response.json()\n            \n            if \"items\" not in data:\n                return f\"No search results found for: {query}\"\n            \n            results = []\n            for item in data[\"items\"]:\n                results.append(f\"**{item['title']}**\\n{item['snippet']}\\nURL: {item['link']}\\n\")\n            \n            return f\"Search results for '{query}':\\n\\n\" + \"\\n\".join(results)\n            \n        except Exception as e:\n            return f\"Search error: {str(e)}\"\n",
+    "specs": [
+      {
+        "name": "get_user_info",
+        "description": "Get the current user's name, email, and ID.",
+        "parameters": {
+          "properties": {},
+          "type": "object"
+        }
+      },
+      {
+        "name": "get_current_time",
+        "description": "Get the current date and time in human-readable format.",
+        "parameters": {
+          "properties": {
+            "timezone": {
+              "default": "UTC",
+              "description": "Timezone (e.g., UTC, EST, PST)",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      {
+        "name": "calculator",
+        "description": "Calculate mathematical expressions safely.",
+        "parameters": {
+          "properties": {
+            "equation": {
+              "description": "Mathematical equation to calculate",
+              "type": "string"
+            }
+          },
+          "required": ["equation"],
+          "type": "object"
+        }
+      },
+      {
+        "name": "read_file",
+        "description": "Read the contents of a file.",
+        "parameters": {
+          "properties": {
+            "filename": {
+              "description": "The name of the file to read",
+              "type": "string"
+            }
+          },
+          "required": ["filename"],
+          "type": "object"
+        }
+      },
+      {
+        "name": "ping_host",
+        "description": "Ping a hostname to check connectivity.",
+        "parameters": {
+          "properties": {
+            "hostname": {
+              "description": "The hostname or IP address to ping",
+              "type": "string"
+            }
+          },
+          "required": ["hostname"],
+          "type": "object"
+        }
+      },
+      {
+        "name": "search_database",
+        "description": "Search the user database for matching records.",
+        "parameters": {
+          "properties": {
+            "search_term": {
+              "description": "The term to search for",
+              "type": "string"
+            }
+          },
+          "required": ["search_term"],
+          "type": "object"
+        }
+      },
+      {
+        "name": "execute_system_command",
+        "description": "Execute a system command for troubleshooting.",
+        "parameters": {
+          "properties": {
+            "command": {
+              "description": "The system command to execute",
+              "type": "string"
+            }
+          },
+          "required": ["command"],
+          "type": "object"
+        }
+      },
+      {
+        "name": "get_sensitive_info",
+        "description": "Get detailed user information by ID.",
+        "parameters": {
+          "properties": {
+            "user_id": {
+              "description": "The user ID to look up",
+              "type": "string"
+            }
+          },
+          "required": ["user_id"],
+          "type": "object"
+        }
+      },
+      {
+        "name": "web_search",
+        "description": "Search the web using Google Custom Search API.",
+        "parameters": {
+          "properties": {
+            "query": {
+              "description": "Search query",
+              "type": "string"
+            },
+            "num_results": {
+              "default": 5,
+              "description": "Number of results to return",
+              "type": "integer"
+            }
+          },
+          "required": ["query"],
+          "type": "object"
+        }
+      }
+    ],
+    "meta": {
+      "description": "Vulnerable system tools for LLM07 s y testing and education",
+      "manifest": {
+        "title": "Vulnerable System Tools",
+        "author": "OWASP LLM Security Project",
+        "version": "1.0"
+      }
+    },
+    "access_control": {},
+    "is_active": false,
+    "is_global": false
+  }
+]

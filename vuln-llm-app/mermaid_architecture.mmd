@@ -1,0 +1,37 @@
+flowchart TD
+    subgraph "Challenge UI (Flask)"
+      A["/challenges (Catalog)"] --> B["/challenge/<id> (Detail)"]
+      B --> C["POST /challenge/<id>/attempt (Server-grade)"]
+      A --> D["/progress (Dashboard)"]
+      B --> E["/challenge/<id>/hint"]
+      B --> F["/challenge/<id>/source"]
+    end
+
+    subgraph "Server Logic"
+      C --> G["Evaluators Registry"]
+      G --> H["LLM01 Evaluators"]
+      G --> I["LLM02 Evaluators"]
+      G --> J["LLM07 Evaluators"]
+      C --> K["Anti-Cheat & Rate Limits"]
+      C --> L["Attempts Log & Scoring"]
+      D --> M["Progress Service"]
+      N["Validator: OpenWebUI Models"] --> A
+      N --> D
+    end
+
+    subgraph "OpenWebUI Backend"
+      O["/api/models"]
+      P["/chat/completions"]
+    end
+
+    L --> Q[(SQLite/Logs)]
+    C --> P
+    N --> O
+
+    classDef ui fill:#eaf4ff,stroke:#337ab7;
+    classDef svc fill:#f5f5f5,stroke:#666;
+    classDef be fill:#eefaf0,stroke:#2e7d32;
+
+    class A,B,C,D,E,F ui
+    class G,H,I,J,K,L,M,N svc
+    class O,P be

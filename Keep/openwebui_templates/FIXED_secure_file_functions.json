@@ -1,0 +1,88 @@
+[{
+  "id": "secure_file_toolv2",
+  "name": "Secure File Tool",
+  "type": "function", 
+  "content": "\"\"\"\ntitle: Secure File Tool\nauthor: OWASP LLM Security Project\nversion: 2.0\ndescription: Demonstrates proper security controls and defensive techniques\n\"\"\"\n\nimport os\nimport re\nimport subprocess\nimport sqlite3\nimport logging\nfrom pathlib import Path\nfrom typing import Optional, List\n\nclass Tools:\n    def __init__(self):\n        self.citation = True\n        self.logger = logging.getLogger(__name__)\n        \n        # Security configuration\n        self.allowed_directories = ['/tmp/safe_files', './sandbox']\n        self.allowed_commands = ['ping', 'nslookup', 'dig']\n        self.max_file_size = 1024 * 1024  # 1MB\n        \n    def _validate_filename(self, filename: str) -> bool:\n        \"\"\"Validate filename to prevent path traversal attacks.\"\"\"\n        # Normalize the path\n        normalized = os.path.normpath(filename)\n        \n        # Check for path traversal patterns\n        if '..' in normalized or normalized.startswith('/'):\n            return False\n            \n        # Check against allowed directories\n        for allowed_dir in self.allowed_directories:\n            if normalized.startswith(allowed_dir):\n                return True\n                \n        return False\n    \n    def _sanitize_hostname(self, hostname: str) -> Optional[str]:\n        \"\"\"Sanitize hostname input to prevent command injection.\"\"\"\n        # Only allow alphanumeric, dots, and hyphens\n        if not re.match(r'^[a-zA-Z0-9.-]+$', hostname):\n            return None\n            \n        # Prevent command injection patterns\n        dangerous_patterns = ['&', '|', ';', '`', '$', '(', ')', '<', '>']\n        if any(pattern in hostname for pattern in dangerous_patterns):\n            return None\n            \n        return hostname\n    \n    def read_file(self, filename: str) -> str:\n        \"\"\"Securely read files with validation and access controls.\"\"\"\n        try:\n            # Input validation\n            if not self._validate_filename(filename):\n                return \"Error: Invalid filename or unauthorized directory access\"\n            \n            # Check file exists and size\n            if not os.path.exists(filename):\n                return \"Error: File not found\"\n                \n            if os.path.getsize(filename) > self.max_file_size:\n                return \"Error: File too large\"\n            \n            # Safe file reading\n            with open(filename, 'r', encoding='utf-8') as f:\n                content = f.read()\n                \n            self.logger.info(f\"Secure file read: {filename}\")\n            return f\"File contents:\\n{content}\"\n            \n        except Exception as e:\n            self.logger.error(f\"File read error: {str(e)}\")\n            return f\"Error: Unable to read file safely\"\n    \n    def ping_host(self, hostname: str) -> str:\n        \"\"\"Securely ping hosts with input validation.\"\"\"\n        try:\n            # Input sanitization\n            clean_hostname = self._sanitize_hostname(hostname)\n            if not clean_hostname:\n                return \"Error: Invalid hostname format\"\n            \n            # Use safe command execution\n            result = subprocess.run(\n                ['ping', '-c', '3', clean_hostname],\n                capture_output=True,\n                text=True,\n                timeout=10\n            )\n            \n            self.logger.info(f\"Secure ping executed: {clean_hostname}\")\n            return f\"Ping results:\\n{result.stdout}\"\n            \n        except subprocess.TimeoutExpired:\n            return \"Error: Ping operation timed out\"\n        except Exception as e:\n            self.logger.error(f\"Ping error: {str(e)}\")\n            return f\"Error: Unable to ping host safely\"\n    \n    def search_database(self, search_term: str) -> str:\n        \"\"\"Secure database search with parameterized queries.\"\"\"\n        try:\n            # Input validation\n            if not search_term or len(search_term) > 100:\n                return \"Error: Invalid search term\"\n            \n            conn = sqlite3.connect(':memory:')\n            cursor = conn.cursor()\n            \n            # Create sample table\n            cursor.execute('''\n                CREATE TABLE users (id INTEGER, name TEXT, email TEXT, role TEXT)\n            ''')\n            cursor.execute(\"INSERT INTO users VALUES (1, 'admin', 'admin@example.com', 'administrator')\")\n            cursor.execute(\"INSERT INTO users VALUES (2, 'user', 'user@example.com', 'regular')\")\n            cursor.execute(\"INSERT INTO users VALUES (3, 'test', 'test@example.com', 'test')\")\n            \n            # SECURE: Parameterized query prevents SQL injection\n            query = 'SELECT * FROM users WHERE name LIKE ?'\n            cursor.execute(query, (f'%{search_term}%',))\n            \n            results = cursor.fetchall()\n            conn.close()\n            \n            if results:\n                output = \"Search results:\\n\"\n                for row in results:\n                    output += f\"ID: {row[0]}, Name: {row[1]}, Email: {row[2]}, Role: {row[3]}\\n\"\n                return output\n            else:\n                return \"No results found.\"\n                \n        except Exception as e:\n            self.logger.error(f\"Database search error: {str(e)}\")\n            return f\"Database error: Unable to perform search safely\"\n\n    def execute_system_command(self, command: str) -> str:\n        \"\"\"Execute only approved system commands with strict validation.\"\"\"\n        try:\n            # Input validation - only allow specific commands\n            command_parts = command.split()\n            if not command_parts or command_parts[0] not in self.allowed_commands:\n                return f\"Error: Command '{command_parts[0] if command_parts else 'empty'}' not allowed. Allowed commands: {', '.join(self.allowed_commands)}\"\n            \n            # Additional validation for command arguments\n            for part in command_parts[1:]:\n                if re.search(r\"[;&|`$<>()]\", part):\n                    return \"Error: Command contains invalid characters\"\n            \n            # Execute with timeout and limited permissions\n            result = subprocess.run(\n                command_parts,\n                capture_output=True,\n                text=True,\n                timeout=5\n            )\n            \n            output = f\"Command: {command}\\n\"\n            output += f\"Return code: {result.returncode}\\n\"\n            output += f\"Output:\\n{result.stdout}\"\n            \n            if result.stderr:\n                output += f\"Errors:\\n{result.stderr}\"\n                \n            self.logger.info(f\"Secure command executed: {command}\")\n            return output\n            \n        except subprocess.TimeoutExpired:\n            return \"Error: Command execution timed out\"\n        except Exception as e:\n            self.logger.error(f\"Command execution error: {str(e)}\")\n            return f\"Execution error: Unable to execute command safely\"\n\n    def get_user_info(self, user_id: str) -> str:\n        \"\"\"Get user information with proper authorization and data protection.\"\"\"\n        try:\n            # Input validation\n            if not re.match(r'^[a-zA-Z0-9_-]+$', user_id):\n                return \"Error: Invalid user ID format\"\n            \n            # Authorization check (simplified for demo)\n            # In real implementation, check user permissions\n            \n            # Simulate accessing user database with privacy protection\n            user_data = {\n                \"1\": {\n                    \"name\": \"Administrator\",\n                    \"email\": \"ad***@company.com\",  # Masked email\n                    \"role\": \"admin\",\n                    \"last_login\": \"2024-01-15\"\n                },\n                \"2\": {\n                    \"name\": \"Regular User\",\n                    \"email\": \"us***@company.com\",  # Masked email\n                    \"role\": \"user\",\n                    \"last_login\": \"2024-01-14\"\n                }\n            }\n            \n            if user_id in user_data:\n                user = user_data[user_id]\n                # Return only non-sensitive information\n                return f\"\"\"User Information:\nName: {user['name']}\nEmail: {user['email']}\nRole: {user['role']}\nLast Login: {user['last_login']}\"\"\"\n            else:\n                return \"User not found.\"\n                \n        except Exception as e:\n            self.logger.error(f\"User info retrieval error: {str(e)}\")\n            return f\"Error retrieving user info: Access denied\"\n",
+  "specs": [
+    {
+      "name": "read_file",
+      "description": "Securely read files with validation and access controls.",
+      "parameters": {
+        "properties": {
+          "filename": {
+            "description": "The name of the file to read",
+            "type": "string"
+          }
+        },
+        "required": ["filename"],
+        "type": "object"
+      }
+    },
+    {
+      "name": "ping_host",
+      "description": "Securely ping hosts with input validation.",
+      "parameters": {
+        "properties": {
+          "hostname": {
+            "description": "The hostname or IP address to ping",
+            "type": "string"
+          }
+        },
+        "required": ["hostname"],
+        "type": "object"
+      }
+    },
+    {
+      "name": "search_database",
+      "description": "Secure database search with parameterized queries.",
+      "parameters": {
+        "properties": {
+          "search_term": {
+            "description": "The term to search for",
+            "type": "string"
+          }
+        },
+        "required": ["search_term"],
+        "type": "object"
+      }
+    },
+    {
+      "name": "execute_system_command",
+      "description": "Execute only approved system commands with strict validation.",
+      "parameters": {
+        "properties": {
+          "command": {
+            "description": "The system command to execute",
+            "type": "string"
+          }
+        },
+        "required": ["command"],
+        "type": "object"
+      }
+    },
+    {
+      "name": "get_user_info",
+      "description": "Get user information with proper authorization and data protection.",
+      "parameters": {
+        "properties": {
+          "user_id": {
+            "description": "The user ID to look up",
+            "type": "string"
+          }
+        },
+        "required": ["user_id"],
+        "type": "object"
+      }
+    }
+  ],
+  "meta": {
+    "description": "Secure file and system operation tool demonstrating proper security controls and defensive techniques",
+    "manifest": {
+      "title": "Secure File Tool",
+      "author": "OWASP LLM Security Project",
+      "version": "1.0"
+    }
+  },
+  "is_active": false,
+  "is_global": false
+}]
